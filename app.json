@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Paced",
+    "slug": "paced",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.karthik.paced"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./public/favicon.png",
+      "name": "Paced",
+      "shortName": "Paced",
+      "output": "single",
+      "themeColor": "#4F46E5",
+      "backgroundColor": "#F2F2F7",
+      "description": "To-do list that plans your deadlines around your calendar"
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Paced reads your calendar to plan work around your events, and adds work blocks and deadlines to its own calendar."
+        }
+      ]
+    ],
+    "experiments": {
+      "baseUrl": "/paced"
+    }
+  }
+}
