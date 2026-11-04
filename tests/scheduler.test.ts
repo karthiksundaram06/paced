@@ -182,7 +182,7 @@ test('blocks never overlap each other', () => {
 console.log(`\n${passed} tests passed`);
 
 /* ---------- Shortcut bridge (web calendar connection) ---------- */
-import { buildSyncEvents, parseBusyText, parseIsoDate, parseShortcutReturn, shortcutDate, shortcutUrl } from '../src/shortcutBridge';
+import { buildSyncEvents, looksAllDay, parseBusyText, parseIsoDate, parseShortcutReturn, shortcutDate, shortcutUrl } from '../src/shortcutBridge';
 
 test('ISO dates from Shortcuts parse in every variant', () => {
   const expected = Date.UTC(2026, 10, 4, 12, 15); // 13:15 Amsterdam
@@ -246,6 +246,14 @@ test('events come back from the shortcut in the URL, "+" offsets intact', () => 
   assert.equal(parseBusyText(rawAmp.result!)!.busy[0].title, 'Q&A session');
   assert.equal(parseShortcutReturn(''), null);
   assert.equal(parseShortcutReturn('?utm=1'), null);
+});
+
+test('all-day events are recognised, normal ones are not', () => {
+  assert.equal(looksAllDay({ start: at('2026-11-05T00:00:00'), end: at('2026-11-06T00:00:00') }), true);
+  assert.equal(looksAllDay({ start: at('2026-11-05T00:00:00'), end: at('2026-11-08T00:00:00') }), true);
+  assert.equal(looksAllDay({ start: at('2026-11-05T09:00:00'), end: at('2026-11-05T12:00:00') }), false);
+  assert.equal(looksAllDay({ start: at('2026-11-05T00:00:00'), end: at('2026-11-05T08:00:00') }), false);
+  assert.equal(looksAllDay({ start: at('2026-10-25T00:00:00'), end: at('2026-10-26T00:00:00') }), true); // 25h DST day
 });
 
 console.log(`${passed} tests passed (incl. bridge)`);
