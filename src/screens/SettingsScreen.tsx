@@ -13,6 +13,13 @@ import { IS_WEB, useStore } from '../store';
 import { ACCENTS, useTheme } from '../theme';
 import { Button, Card, Chip, Divider, Icon, Muted, SectionTitle } from '../ui';
 
+const FONTS: { key: 'system' | 'inter' | 'serif' | 'mono'; name: string; note: string; preview: string }[] = [
+  { key: 'system', name: 'Default', note: 'iPhone system font', preview: '-apple-system, system-ui, sans-serif' },
+  { key: 'inter', name: 'Notion', note: 'Inter, Notion’s sans', preview: "'InterVariable', sans-serif" },
+  { key: 'serif', name: 'Serif', note: 'Like Notion’s Serif', preview: "'New York', ui-serif, Georgia, serif" },
+  { key: 'mono', name: 'Mono', note: 'Like Notion’s Mono', preview: "ui-monospace, 'SF Mono', Menlo, monospace" },
+];
+
 export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
   const t = useTheme();
   const s = useStore();
@@ -93,15 +100,45 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
         </View>
       </Card>
 
+      <Card style={{ gap: 12 }}>
+        <Text style={{ color: t.text, fontSize: 16 }}>Font</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {FONTS.map((f) => {
+            const selected = (settings.font ?? 'system') === f.key;
+            return (
+              <Pressable
+                key={f.key}
+                onPress={() => updateSettings({ font: f.key })}
+                style={{
+                  width: '47%',
+                  flexGrow: 1,
+                  borderRadius: 12,
+                  padding: 12,
+                  gap: 2,
+                  borderWidth: 2,
+                  borderColor: selected ? t.accent : t.border,
+                  backgroundColor: selected ? t.accent + '14' : t.cardAlt,
+                }}
+              >
+                {/* Inline font so each tile previews its own font whatever is selected */}
+                <Text style={{ color: t.text, fontSize: 24, fontFamily: f.preview }}>Aa</Text>
+                <Text style={{ color: selected ? t.accent : t.text, fontSize: 14, fontWeight: '700' }}>{f.name}</Text>
+                <Text style={{ color: t.sub, fontSize: 12 }}>{f.note}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Card>
+
       <SectionTitle>Calendar</SectionTitle>
       {IS_WEB ? (
         <>
           <CalendarSyncCard onOpenGuide={onOpenGuide} />
           <Card>
             {row(
-              'Sync automatically',
-              'When you open Paced and your tasks or events changed, it sends the new plan to your calendar by itself (at most every 10 min)',
-              <Switch value={settings.autoSync} onValueChange={(v) => updateSettings({ autoSync: v })} trackColor={{ true: t.accent }} />
+              'Update Calendar automatically',
+              'Off: Paced never opens Shortcuts by itself. Your events still refresh every time you open Paced from its icon; tap Sync now when you want your work blocks in Calendar. On: Paced does that for you whenever your plan changes, which briefly opens Shortcuts.',
+              <Switch value={settings.autoWrite} onValueChange={(v) => updateSettings({ autoWrite: v })} trackColor={{ true: t.accent }} />
             )}
           </Card>
           <Muted style={{ fontSize: 12, paddingHorizontal: 4 }}>

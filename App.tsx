@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProjectEditor } from './src/components/ProjectEditor';
 import { ShortcutGuide } from './src/components/ShortcutGuide';
@@ -32,6 +32,10 @@ function Main() {
   const [projectEditor, setProjectEditor] = useState<{ project: Project | null } | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const openGuide = () => setGuideOpen(true);
+  // Never auto-sync (which leaves Safari for a moment) while an editor is open.
+  const { setUiBusy } = useStore();
+  const editorOpen = !!taskEditor || !!projectEditor || guideOpen;
+  useEffect(() => setUiBusy(editorOpen), [editorOpen, setUiBusy]);
 
   if (!loaded) {
     return (
@@ -113,6 +117,10 @@ function Main() {
 /** Hands the chosen accent colour to every screen. */
 function Themed() {
   const { settings } = useStore();
+  // Web: the chosen font is applied by CSS in public/index.html via <body data-font="…">.
+  useEffect(() => {
+    if (Platform.OS === 'web') document.body.dataset.font = settings.font ?? 'system';
+  }, [settings.font]);
   return (
     <AccentContext.Provider value={settings.accent ?? 'indigo'}>
       <Main />

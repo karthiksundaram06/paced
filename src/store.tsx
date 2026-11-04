@@ -37,6 +37,8 @@ export interface Store {
   loaded: boolean;
   now: number;
   tasks: Task[];
+  /** Deleted tasks, newest first; restorable for 30 days. */
+  deletedTasks: Task[];
   projects: Project[];
   settings: Settings;
   timer: RunningTimer | null;
@@ -53,10 +55,15 @@ export interface Store {
   calendarStale: boolean;
   /** Web: short message about the last calendar sync. */
   notice: { ok: boolean; text: string } | null;
+  /** Web: tell the store a task/project editor is open, so auto-sync never interrupts typing. */
+  setUiBusy: (busy: boolean) => void;
 
   addTask: (t: Omit<Task, 'id' | 'createdAt' | 'loggedSec' | 'done'>) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+  restoreTask: (id: string) => void;
+  purgeTask: (id: string) => void;
+  emptyDeleted: () => void;
   setDone: (id: string, done: boolean) => void;
   addLogged: (id: string, deltaMin: number) => void;
 
@@ -94,7 +101,12 @@ const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setTasks] = useState<Task[]>([]);
+  const tasks = useMemo(() => allTasks.filter((x) => !x.deletedAt), [allTasks]);
+  const deletedTasks = useMemo(
+    () => allTasks.filter((x) => x.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
+    [allTasks]
+  );
   const [projects, setProjects] = useState<Project[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [timer, setTimer] = useState<RunningTimer | null>(null);
@@ -120,7 +132,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const hydrate = useCallback((raw: string) => {
     const data = JSON.parse(raw) as Partial<Persisted>;
     lastSavedRef.current = raw;
-    setTasks(data.tasks ?? []);
+    // Deleted tasks are kept for 30 days.
+    setTasks((data.tasks ?? []).filter((x) => !x.deletedAt || Date.now() - x.deletedAt < 30 * 24 * 3600_000));
     setProjects(data.projects ?? []);
     setSettings({ ...DEFAULT_SETTINGS, ...(data.settings ?? {}) });
     setTimer(data.timer ?? null);
@@ -153,14 +166,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     const h = setTimeout(() => {
-      const data: Persisted = { tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused };
+      const data: Persisted = { tasks: allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused };
       const json = JSON.stringify(data);
       if (json === lastSavedRef.current) return;
       lastSavedRef.current = json;
       AsyncStorage.setItem(STORAGE_KEY, json).catch(() => {});
     }, 300);
     return () => clearTimeout(h);
-  }, [loaded, tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused]);
+  }, [loaded, allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused]);
 
   /* ---- clock ---- */
   useEffect(() => {
@@ -179,6 +192,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const ref = useRef({ tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt });
   ref.current = { tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt };
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [uiBusy, setUiBusy] = useState(false);
+  const uiBusyRef = useRef(false);
+  uiBusyRef.current = uiBusy;
+  // Messages fade after a few seconds.
+  useEffect(() => {
+    if (!notice || notice.text.startsWith('Updating')) return;
+    const h = setTimeout(() => setNotice(null), 8000);
+    return () => clearTimeout(h);
+  }, [notice]);
 
   /* ---- calendar ---- */
   const busyKeyRef = useRef('');
@@ -238,7 +260,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       pendingPaste: true,
       lastError: undefined,
       writtenBusyKey: busyKey(b),
-      lastAutoAt: auto ? t : x.lastAutoAt,
+      lastAutoAt: t, // any hand-off (auto or manual) counts for the loop guard
     }));
     // Give storage a moment to save before iOS switches to the Shortcuts app.
     setTimeout(() => {
@@ -373,29 +395,46 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', onHash);
   }, [loaded]);
 
-  // Does the calendar need the current plan? (tasks changed, events changed, or it's been a while)
+  // Does the calendar need the current plan?
+  // - you changed tasks since the last sync: yes, soon (but not twice within 30 s)
+  // - your events changed, or it's been 6 h: yes, but at most every 10 min (prevents ping-pong)
   const needsWrite = useCallback(() => {
     const { settings: s, sync: sy, busy: b, dataChangedAt: changed } = ref.current;
-    if (!s.shortcutReady || !s.autoSync) return false;
+    if (!s.shortcutReady || !s.autoWrite) return false;
     const t = Date.now();
-    if (sy.lastAutoAt && t - sy.lastAutoAt < 10 * 60_000) return false; // never bounce more than every 10 min
-    if (!sy.lastSyncAt) return true;
-    if ((changed ?? 0) > sy.lastSyncAt) return true;
-    if (t - sy.lastSyncAt > 6 * 3600_000) return true;
+    const sinceHandoff = sy.lastAutoAt ? t - sy.lastAutoAt : Infinity;
+    if ((changed ?? 0) > (sy.lastSyncAt ?? 0)) return sinceHandoff > 30_000;
+    if (sinceHandoff < 10 * 60_000) return false;
+    if (!sy.lastSyncAt || t - sy.lastSyncAt > 6 * 3600_000) return true;
     return busyKey(b) !== sy.writtenBusyKey;
   }, []);
 
-  useEffect(() => {
-    if (!loaded || !IS_WEB) return;
-    let pending: ReturnType<typeof setTimeout> | undefined;
-    const check = () => {
-      clearTimeout(pending);
-      pending = setTimeout(() => {
-        if (document.visibilityState !== 'visible' || !needsWrite()) return;
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const scheduleAutoSync = useCallback(
+    (delay: number) => {
+      clearTimeout(autoTimer.current);
+      autoTimer.current = setTimeout(() => {
+        if (document.visibilityState !== 'visible' || uiBusyRef.current || !needsWrite()) return;
         setNotice({ ok: true, text: 'Updating your calendar…' });
         startShortcutSync(true);
-      }, 1500);
-    };
+      }, delay);
+    },
+    [needsWrite, startShortcutSync]
+  );
+
+  // After you add or change tasks (and close the editor), update the calendar by itself.
+  useEffect(() => {
+    if (!loaded || !IS_WEB || uiBusy) return;
+    if ((dataChangedAt ?? 0) > (sync.lastSyncAt ?? 0)) {
+      // Wait 5 s after the last edit, and at least 30 s after the previous hand-off.
+      const sinceHandoff = sync.lastAutoAt ? Date.now() - sync.lastAutoAt : Infinity;
+      scheduleAutoSync(Math.max(5000, 30_000 - sinceHandoff + 500));
+    }
+  }, [loaded, dataChangedAt, uiBusy, sync.lastSyncAt, sync.lastAutoAt, scheduleAutoSync]);
+
+  useEffect(() => {
+    if (!loaded || !IS_WEB) return;
+    const check = () => scheduleAutoSync(1500);
     check();
     // Another Safari tab (e.g. the one the shortcut opened) saved newer data: pick it up.
     const onStorage = (e: StorageEvent) => {
@@ -411,11 +450,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      clearTimeout(pending);
+      clearTimeout(autoTimer.current);
       window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [loaded, needsWrite, startShortcutSync, hydrate]);
+  }, [loaded, scheduleAutoSync, hydrate]);
 
   const removeCalendar = useCallback(async () => {
     await CalendarApi.removeAppCalendar(ref.current.settings);
@@ -441,12 +480,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     bump();
   };
 
+  /** Moves the task to Deleted (restorable). */
   const deleteTask: Store['deleteTask'] = (id) => {
-    if (ref.current.timer?.taskId === id) setTimer(null);
+    const at = Date.now();
+    const tm = ref.current.timer;
+    if (tm?.taskId === id) setTimer(null);
     setPaused((p) => (p === id ? null : p));
-    setTasks((xs) => xs.filter((x) => x.id !== id));
+    setTasks((xs) => (tm?.taskId === id ? commitTimer(xs, tm, at) : xs).map((x) => (x.id === id ? { ...x, deletedAt: at } : x)));
     bump();
   };
+
+  const restoreTask: Store['restoreTask'] = (id) => {
+    setTasks((xs) => xs.map((x) => (x.id === id ? { ...x, deletedAt: undefined } : x)));
+    bump();
+  };
+
+  const purgeTask: Store['purgeTask'] = (id) => setTasks((xs) => xs.filter((x) => x.id !== id));
+  const emptyDeleted: Store['emptyDeleted'] = () => setTasks((xs) => xs.filter((x) => !x.deletedAt));
 
   const setDone: Store['setDone'] = (id, done) => {
     const at = Date.now();
@@ -482,8 +532,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProject: Store['deleteProject'] = (id, deleteTasks) => {
     setProjects((xs) => xs.filter((x) => x.id !== id));
+    const at = Date.now();
     setTasks((xs) =>
-      deleteTasks ? xs.filter((x) => x.projectId !== id) : xs.map((x) => (x.projectId === id ? { ...x, projectId: undefined } : x))
+      xs.map((x) =>
+        x.projectId !== id ? x : deleteTasks ? { ...x, projectId: undefined, deletedAt: x.deletedAt ?? at } : { ...x, projectId: undefined }
+      )
     );
     if (deleteTasks) {
       const tm = ref.current.timer;
@@ -524,7 +577,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => refreshBusy(), 50);
     }
     // Colour and sync preferences don't change the plan, so they don't need a calendar update.
-    const cosmetic = ['accent', 'autoSync'];
+    const cosmetic = ['accent', 'autoWrite', 'font'];
     if (Object.keys(patch).some((k) => !cosmetic.includes(k))) bump();
   };
 
@@ -542,6 +595,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loaded,
     now,
     tasks,
+    deletedTasks,
     projects,
     settings,
     timer,
@@ -555,9 +609,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     busyUpdatedAt,
     calendarStale: !sync.lastSyncAt || (dataChangedAt ?? 0) > sync.lastSyncAt,
     notice,
+    setUiBusy,
     addTask,
     updateTask,
     deleteTask,
+    restoreTask,
+    purgeTask,
+    emptyDeleted,
     setDone,
     addLogged,
     addProject,

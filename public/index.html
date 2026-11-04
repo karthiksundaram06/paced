@@ -18,6 +18,29 @@
       @media (prefers-color-scheme: dark) { body { background: #000; } }
       #root { display: flex; height: 100%; flex: 1; }
       input, textarea { font-size: 16px; } /* stops iPhone zooming in on focus */
+
+      /* Font picker (Settings → Appearance). Icons set their own font inline, so they're left alone. */
+      @font-face {
+        font-family: 'InterVariable';
+        src: url('./fonts/inter-latin-wght-normal.woff2') format('woff2');
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: swap;
+      }
+      body[data-font='inter'] [dir='auto']:not([style*='font-family']),
+      body[data-font='inter'] input, body[data-font='inter'] textarea {
+        font-family: 'InterVariable', -apple-system, system-ui, sans-serif !important;
+        font-feature-settings: 'cv11', 'ss01';
+      }
+      body[data-font='serif'] [dir='auto']:not([style*='font-family']),
+      body[data-font='serif'] input, body[data-font='serif'] textarea {
+        font-family: 'New York', ui-serif, Georgia, serif !important;
+      }
+      body[data-font='mono'] [dir='auto']:not([style*='font-family']),
+      body[data-font='mono'] input, body[data-font='mono'] textarea {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace !important;
+        letter-spacing: -0.2px;
+      }
     </style>
   </head>
   <body>

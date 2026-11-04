@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { confirmAction } from '../confirm';
 import { duration, when } from '../format';
 import { buildPlan, loggedSecNow } from '../scheduler';
 import { useStore } from '../store';
@@ -75,10 +74,9 @@ export function TaskEditor({
 
   const confirmDelete = () => {
     if (!task) return;
-    confirmAction('Delete task?', task.title, 'Delete', () => {
-      store.deleteTask(task.id);
-      onClose();
-    });
+    // Goes to Tasks → Deleted, where it can be restored, so no confirmation needed.
+    store.deleteTask(task.id);
+    onClose();
   };
 
   const logged = task ? loggedSecNow(task, timer, now) / 60 : 0;

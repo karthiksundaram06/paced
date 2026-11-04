@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { TaskRow } from '../components/TaskRow';
-import { duration, when } from '../format';
+import { confirmAction } from '../confirm';
+import { duration, relative, when } from '../format';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import type { Project, Task } from '../types';
@@ -20,8 +21,9 @@ export function TasksScreen({
   onNewProject: () => void;
 }) {
   const t = useTheme();
-  const { tasks, projects, plan, now } = useStore();
+  const { tasks, projects, plan, now, deletedTasks, restoreTask, purgeTask, emptyDeleted } = useStore();
   const [showDone, setShowDone] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const visible = tasks.filter((x) => x.done === showDone);
   const sortTasks = (xs: Task[]) =>
@@ -102,6 +104,54 @@ export function TasksScreen({
             </View>
           );
         })}
+
+        {deletedTasks.length > 0 && (
+          <View style={{ marginTop: 16, gap: 8 }}>
+            <Pressable
+              onPress={() => setShowDeleted((v) => !v)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingVertical: 6 }}
+            >
+              <Icon name={showDeleted ? 'chevron-down' : 'chevron-forward'} size={18} color={t.sub} />
+              <Icon name="trash-outline" size={18} color={t.sub} />
+              <Text style={{ color: t.sub, fontSize: 16, fontWeight: '700', flex: 1 }}>Deleted ({deletedTasks.length})</Text>
+            </Pressable>
+            {showDeleted && (
+              <View style={{ backgroundColor: t.card, borderRadius: 16, overflow: 'hidden' }}>
+                {deletedTasks.map((d, i) => (
+                  <View
+                    key={d.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderTopWidth: i ? 0.5 : 0, borderTopColor: t.border }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: t.sub, fontSize: 15, textDecorationLine: 'line-through' }} numberOfLines={1}>
+                        {d.title}
+                      </Text>
+                      <Text style={{ color: t.faint, fontSize: 12 }}>Deleted {relative(d.deletedAt!, now)}</Text>
+                    </View>
+                    <Pressable hitSlop={8} onPress={() => restoreTask(d.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Icon name="arrow-undo" size={16} color={t.accent} />
+                      <Text style={{ color: t.accent, fontWeight: '700' }}>Restore</Text>
+                    </Pressable>
+                    <Pressable
+                      hitSlop={8}
+                      accessibilityLabel="Delete forever"
+                      onPress={() => confirmAction('Delete forever?', d.title, 'Delete', () => purgeTask(d.id))}
+                    >
+                      <Icon name="close-circle" size={22} color={t.faint} />
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable
+                  onPress={() => confirmAction('Empty Deleted?', 'These tasks will be gone for good.', 'Empty', emptyDeleted)}
+                  style={{ padding: 14, borderTopWidth: 0.5, borderTopColor: t.border, alignItems: 'center' }}
+                >
+                  <Text style={{ color: t.danger, fontWeight: '700' }}>Empty Deleted</Text>
+                </Pressable>
+              </View>
+            )}
+            {showDeleted && <Text style={{ color: t.faint, fontSize: 12, paddingHorizontal: 4 }}>Deleted tasks are removed for good after 30 days.</Text>}
+          </View>
+        )}
       </Screen>
 
       <View style={{ position: 'absolute', right: 20, bottom: 24 }}>

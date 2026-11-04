@@ -7,9 +7,11 @@ You add a task and say roughly how long it takes. Paced then tells you:
 - **Time to complete**: your estimate minus what the timer has already tracked
 - **When it'll be done**: work is slotted into your free time, around your calendar events
 - **Deadlines**: a live countdown for every task and project deadline, whether you'll make it (*On track / Tight / At risk*), and the latest time you can start. If you didn't set a deadline, it suggests a realistic one.
-- **Timer**: tap ▶ on any task. Tracked time lowers what's left and moves the plan.
+- **Timer**: tap ▶ on any task; pausing keeps a Resume card on Today. Tracked time lowers what's left and moves the plan.
+- **Deleted tasks** go to Tasks → Deleted for 30 days, so you can restore them.
+- **Appearance**: 8 accent colours and 4 fonts (Default, Notion/Inter, Serif, Mono).
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
-- **Calendar, automatically**: your events are read every time you open Paced, and work blocks and deadlines go into a **"Paced"** calendar with alerts whenever your plan changes.
+- **Calendar**: your events are read every time you open Paced from its icon, and with one tap work blocks and deadlines go into a **"Paced"** calendar with alerts.
 
 No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your iPhone (in Safari's storage for this site). Use **Settings → Back up tasks** now and then.
 
@@ -19,8 +21,8 @@ No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your
 
 Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You build one shortcut called **Paced Sync** and put it on your Home Screen as the Paced icon:
 
-- **Tap the icon:** it reads your next 4 weeks of events and opens Paced with them already loaded.
-- **When your tasks or events have changed**, Paced passes the new plan to the shortcut (iPhone asks "Open in Shortcuts?" → Open). The shortcut puts work blocks and deadlines into the "Paced" calendar and brings you straight back.
+- **Tap the icon:** it reads your next 4 weeks of events in the background and opens Paced with them already loaded.
+- **Tap Sync now** when you want your work blocks and deadlines in the "Paced" calendar (iPhone asks "Open in Shortcuts?" → Open, and you come straight back). Paced never opens Shortcuts by itself unless you switch on *Update Calendar automatically*.
 
 The same steps are inside the app (Settings → Shortcut setup guide).
 
@@ -67,8 +69,8 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 ### Try it
 
 26. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
-27. When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.
-28. If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.
+27. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
+28. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
 29. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 
 ### If something doesn't work
@@ -78,7 +80,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 - **"Dates are unreadable"**: in Part 2's Text action, Start Date and End Date need Date Format **ISO 8601** with **Include ISO 8601 Time** on.
 - **Safari says "URI Too Long"**: the address in the URL action has `?sync=` instead of `#sync=`.
 - **Shortcut runs but you stay in Shortcuts**: the last action must be **Open URLs** with the Paced address.
-- **Paced keeps sending you to Shortcuts**: it does that at most once every 10 minutes, and only when your plan changed. You can switch it off under Settings → Sync automatically.
+- **Paced keeps sending you to Shortcuts**: switch off Settings → Update Calendar automatically.
 - **Events appear twice**: the "Remove Events" step must be inside the If, filtered to Calendar is *Paced*.
 
 ---

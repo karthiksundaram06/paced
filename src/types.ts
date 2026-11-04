@@ -20,6 +20,7 @@ export interface Task {
   doneAt?: number;
   notes?: string;
   createdAt: number;
+  deletedAt?: number; // in Deleted (Tasks tab) until restored or 30 days pass
 }
 
 export interface RunningTimer {
@@ -42,8 +43,9 @@ export interface Settings {
   alertMin: number; // alert before each work block
   appCalendarId?: string;
   shortcutReady?: boolean; // web: the Paced Sync shortcut has delivered events at least once
-  autoSync: boolean; // web: send the plan to the calendar automatically when Paced opens and it's out of date
+  autoWrite: boolean; // web: hand the plan to Shortcuts by itself when it changed (opens Shortcuts briefly). Off by default.
   accent: string; // colour key from ACCENTS in theme.ts
+  font: 'system' | 'inter' | 'serif' | 'mono'; // web: app-wide text font
 }
 
 export interface SyncState {
@@ -118,6 +120,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ignoreAllDay: true,
   writeToCalendar: true,
   alertMin: 5,
-  autoSync: true,
+  autoWrite: false,
   accent: 'indigo',
+  font: 'system',
 };

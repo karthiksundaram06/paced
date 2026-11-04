@@ -47,20 +47,15 @@ export function CalendarSyncCard({ onOpenGuide, compact }: { onOpenGuide: () => 
             {sync.pendingPaste
               ? "Paced Sync should bring you back here with your events. If it didn't, tap Paste calendar, or check the shortcut ends with Open URLs."
               : connected
-                ? `Events read ${busyUpdatedAt ? relative(busyUpdatedAt, now) : 'never'}` +
-                  (sync.lastSyncAt ? ` · plan sent ${relative(sync.lastSyncAt, now)}` : '') +
-                  (settings.autoSync ? ' · syncs by itself' : '')
+                ? `Events refreshed ${busyUpdatedAt ? relative(busyUpdatedAt, now) : 'never'}` +
+                  (sync.lastSyncAt ? ` · work blocks sent ${relative(sync.lastSyncAt, now)}` : '')
                 : 'Plan around your lectures and shifts, and put work blocks in your calendar. One-time setup with Apple Shortcuts.'}
           </Muted>
         </View>
       </View>
 
-      {connected && calendarStale && !sync.pendingPaste && (
-        <Text style={{ color: t.warn, fontSize: 13 }}>
-          {settings.autoSync
-            ? 'Your tasks changed. Paced updates the calendar the next time you open it, or tap Sync now.'
-            : 'Your tasks changed since the last sync. Sync to update your calendar.'}
-        </Text>
+      {connected && calendarStale && !sync.pendingPaste && !settings.autoWrite && !compact && (
+        <Text style={{ color: t.faint, fontSize: 12 }}>Tap Sync now to put your latest work blocks in Calendar.</Text>
       )}
 
       {sync.pendingPaste ? (

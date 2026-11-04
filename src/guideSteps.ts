@@ -60,8 +60,8 @@ export const GUIDE: GuideSection[] = [
     title: 'Try it',
     steps: [
       'Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.',
-      'When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.',
-      'If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.',
+      'Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.',
+      'If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.',
       'Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don\'t pile up.',
     ],
   },
