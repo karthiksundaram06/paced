@@ -14,8 +14,8 @@ export function ShortcutGuide({ visible, onClose }: { visible: boolean; onClose:
         <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Why a Shortcut?</Text>
         <Muted style={{ lineHeight: 20 }}>
           Websites can't read your iPhone Calendar, but Apple's Shortcuts app can. You build one shortcut, "{SHORTCUT_NAME}", once
-          (about 10 minutes). It writes Paced's work blocks and deadlines into a "Paced" calendar, then hands your events back so
-          Paced can plan around them.
+          (about 10 minutes). It writes Paced's work blocks and deadlines into a "Paced" calendar, reads your events and opens
+          Paced with them. Make it your Paced icon and every open syncs by itself.
         </Muted>
       </Card>
       {GUIDE.map((section) => (

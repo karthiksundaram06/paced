@@ -63,6 +63,13 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
       {IS_WEB ? (
         <>
           <CalendarSyncCard onOpenGuide={onOpenGuide} />
+          <Card>
+            {row(
+              'Sync automatically',
+              'When you open Paced and your tasks or events changed, it sends the new plan to your calendar by itself (at most every 10 min)',
+              <Switch value={settings.autoSync} onValueChange={(v) => updateSettings({ autoSync: v })} trackColor={{ true: t.accent }} />
+            )}
+          </Card>
           <Muted style={{ fontSize: 12, paddingHorizontal: 4 }}>
             Which calendars count as busy and how early you get alerts are set inside the "{SHORTCUT_NAME}" shortcut (Find Calendar Events
             filters and the Add New Event alert).

@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState, Platform } from 'react-native';
 import * as CalendarApi from './calendar';
 import { buildPlan, loggedSecNow, planSignature } from './scheduler';
-import { buildSyncEvents, parseBusyText, shortcutUrl } from './shortcutBridge';
+import { busyKey, buildSyncEvents, parseBusyText, parseShortcutReturn, shortcutUrl } from './shortcutBridge';
 import {
   DEFAULT_SETTINGS,
   type BusyInterval,
@@ -48,6 +48,8 @@ export interface Store {
   busyUpdatedAt?: number;
   /** Tasks or settings changed after the calendar was last updated. */
   calendarStale: boolean;
+  /** Web: short message about the last calendar sync. */
+  notice: { ok: boolean; text: string } | null;
 
   addTask: (t: Omit<Task, 'id' | 'createdAt' | 'loggedSec' | 'done'>) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
@@ -109,21 +111,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const permission: Permission = IS_WEB ? (settings.shortcutReady ? 'granted' : 'unknown') : nativePermission;
 
   /* ---- load & save ---- */
+  const lastSavedRef = useRef<string | null>(null);
+  const hydrate = useCallback((raw: string) => {
+    const data = JSON.parse(raw) as Partial<Persisted>;
+    lastSavedRef.current = raw;
+    setTasks(data.tasks ?? []);
+    setProjects(data.projects ?? []);
+    setSettings({ ...DEFAULT_SETTINGS, ...(data.settings ?? {}) });
+    setTimer(data.timer ?? null);
+    setSync(data.sync ?? {});
+    setBusy(data.busy ?? []);
+    setBusyUpdatedAt(data.busyUpdatedAt);
+    setDataChangedAt(data.dataChangedAt);
+  }, []);
+
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const data = JSON.parse(raw) as Partial<Persisted>;
-          setTasks(data.tasks ?? []);
-          setProjects(data.projects ?? []);
-          setSettings({ ...DEFAULT_SETTINGS, ...(data.settings ?? {}) });
-          setTimer(data.timer ?? null);
-          setSync(data.sync ?? {});
-          setBusy(data.busy ?? []);
-          setBusyUpdatedAt(data.busyUpdatedAt);
-          setDataChangedAt(data.dataChangedAt);
-        }
+        if (raw) hydrate(raw);
       } catch {
         // corrupt storage: start fresh
       }
@@ -142,7 +148,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!loaded) return;
     const h = setTimeout(() => {
       const data: Persisted = { tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data)).catch(() => {});
+      const json = JSON.stringify(data);
+      if (json === lastSavedRef.current) return;
+      lastSavedRef.current = json;
+      AsyncStorage.setItem(STORAGE_KEY, json).catch(() => {});
     }, 300);
     return () => clearTimeout(h);
   }, [loaded, tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt]);
@@ -161,8 +170,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   /* ---- latest-state refs for async work ---- */
-  const ref = useRef({ tasks, projects, settings, plan, permission, sync, timer });
-  ref.current = { tasks, projects, settings, plan, permission, sync, timer };
+  const ref = useRef({ tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt });
+  ref.current = { tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt };
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   /* ---- calendar ---- */
   const busyKeyRef = useRef('');
@@ -210,15 +220,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /** Web: hand the plan to the Paced Sync shortcut; it writes the calendar and opens Paced again with your events. */
+  const startShortcutSync = useCallback((auto: boolean) => {
+    const { plan: p, tasks: ts, projects: ps, busy: b } = ref.current;
+    const t = Date.now();
+    const events = buildSyncEvents(p, ts, ps, t);
+    setSync((x) => ({
+      ...x,
+      lastSyncAt: t,
+      lastWritten: events.length,
+      pendingPaste: true,
+      lastError: undefined,
+      writtenBusyKey: busyKey(b),
+      lastAutoAt: auto ? t : x.lastAutoAt,
+    }));
+    // Give storage a moment to save before iOS switches to the Shortcuts app.
+    setTimeout(() => {
+      window.location.href = shortcutUrl(events, `${window.location.origin}${window.location.pathname}`);
+    }, 400);
+  }, []);
+
   const syncNow = useCallback(async () => {
     if (IS_WEB) {
-      const { plan: p, tasks: ts, projects: ps } = ref.current;
-      const events = buildSyncEvents(p, ts, ps, Date.now());
-      setSync((x) => ({ ...x, lastSyncAt: Date.now(), lastWritten: events.length, pendingPaste: true, lastError: undefined }));
-      // Give storage a moment to save before iOS switches to the Shortcuts app.
-      setTimeout(() => {
-        window.location.href = shortcutUrl(events);
-      }, 350);
+      startShortcutSync(false);
       return;
     }
     await refreshBusy();
@@ -312,6 +336,67 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { ok: false, message: "That file couldn't be read." };
     }
   };
+
+  /* ---- web: automatic calendar sync ---- */
+
+  // Coming back from the shortcut: …/paced/?sync=done&result=PACED-BUSY…
+  useEffect(() => {
+    if (!loaded || !IS_WEB) return;
+    const ret = parseShortcutReturn(window.location.search);
+    if (!ret) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    if (ret.status === 'done' && ret.result !== undefined) {
+      const r = importBusyText(ret.result);
+      setNotice({ ok: r.ok, text: r.ok ? `Calendar synced. ${r.message}` : r.message });
+    } else {
+      setSync((x) => ({ ...x, pendingPaste: false }));
+      if (ret.status === 'error') setNotice({ ok: false, text: `The shortcut stopped with an error${ret.error ? `: ${ret.error}` : ''}.` });
+    }
+  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Does the calendar need the current plan? (tasks changed, events changed, or it's been a while)
+  const needsWrite = useCallback(() => {
+    const { settings: s, sync: sy, busy: b, dataChangedAt: changed } = ref.current;
+    if (!s.shortcutReady || !s.autoSync) return false;
+    const t = Date.now();
+    if (sy.lastAutoAt && t - sy.lastAutoAt < 10 * 60_000) return false; // never bounce more than every 10 min
+    if (!sy.lastSyncAt) return true;
+    if ((changed ?? 0) > sy.lastSyncAt) return true;
+    if (t - sy.lastSyncAt > 6 * 3600_000) return true;
+    return busyKey(b) !== sy.writtenBusyKey;
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || !IS_WEB) return;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const check = () => {
+      clearTimeout(pending);
+      pending = setTimeout(() => {
+        if (document.visibilityState !== 'visible' || !needsWrite()) return;
+        setNotice({ ok: true, text: 'Updating your calendar…' });
+        startShortcutSync(true);
+      }, 1500);
+    };
+    check();
+    // Another Safari tab (e.g. the one the shortcut opened) saved newer data: pick it up.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue && e.newValue !== lastSavedRef.current) hydrate(e.newValue);
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw && raw !== lastSavedRef.current) hydrate(raw);
+      setNow(Date.now());
+      check();
+    };
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearTimeout(pending);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loaded, needsWrite, startShortcutSync, hydrate]);
 
   const removeCalendar = useCallback(async () => {
     await CalendarApi.removeAppCalendar(ref.current.settings);
@@ -441,6 +526,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     refreshing,
     busyUpdatedAt,
     calendarStale: !sync.lastSyncAt || (dataChangedAt ?? 0) > sync.lastSyncAt,
+    notice,
     addTask,
     updateTask,
     deleteTask,

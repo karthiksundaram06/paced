@@ -1,4 +1,4 @@
-import { BUSY_HEADER, SHORTCUT_NAME } from './shortcutBridge';
+import { BUSY_HEADER, PACED_URL, RETURN_PREFIX, SHORTCUT_NAME } from './shortcutBridge';
 
 export interface GuideSection {
   title: string;
@@ -34,25 +34,34 @@ export const GUIDE: GuideSection[] = [
     ],
   },
   {
-    title: 'Part 2: read your events back',
-    note: 'These go at the very bottom, after "End If".',
+    title: 'Part 2: read your events and open Paced',
+    note: 'These go at the very bottom, after "End If". (Built an older version with Copy to Clipboard? Delete Copy to Clipboard and Show Notification, then do the last two steps here.)',
     steps: [
       'Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.',
       'Add "Repeat with Each" for those Calendar Events.',
       'Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.',
       'After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.',
       `Add another "Text": type ${BUSY_HEADER}, press return, then insert Combined Text.`,
-      'Add "Copy to Clipboard" (it copies that Text).',
-      'Add "Show Notification": "Calendar synced. Go back to Paced and tap Paste calendar."',
+      'Add "URL Encode" (it encodes that Text).',
+      `Add "Open URLs". In its URL field type ${RETURN_PREFIX}  and straight after "result=" insert URL Encoded Text. Nothing after it.`,
+    ],
+  },
+  {
+    title: 'Part 3: make it your Paced icon',
+    note: 'Opening Paced through this icon syncs your calendar every time, without any taps.',
+    steps: [
+      `Save the icon: open ${PACED_URL}icon-512.png in Safari → long-press the image → Save to Photos.`,
+      'In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.',
+      'If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.',
     ],
   },
   {
     title: 'Try it',
     steps: [
-      'Tap ▶ in the shortcut editor once. Allow calendar access when asked. It copies your events.',
-      'Come back here and tap Paste calendar. Your events now show on Today, and work is planned around them.',
-      'From now on, just tap Sync with Calendar. iPhone asks to open Shortcuts: tap Open. The shortcut runs, then you come back and tap Paste calendar.',
-      'If Shortcuts asks before removing events, choose Always Allow so it stops asking.',
+      'Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.',
+      'When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.',
+      'If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.',
+      'Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don\'t pile up.',
     ],
   },
 ];

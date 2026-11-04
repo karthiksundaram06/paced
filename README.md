@@ -1,26 +1,26 @@
 # Paced: a to-do list that plans your deadlines
 
-**Open it on your iPhone:** <https://karthiksundaram06.github.io/paced/> → Share → **Add to Home Screen**.
+**On your iPhone:** build the *Paced Sync* shortcut below and add it to your Home Screen as **Paced**. That icon is how you open the app, and it syncs your calendar every time. (Without the calendar you can also just open <https://karthiksundaram06.github.io/paced/> in Safari.)
 
 You add a task and say roughly how long it takes. Paced then tells you:
 
 - **Time to complete**: your estimate minus what the timer has already tracked
 - **When it'll be done**: work is slotted into your free time, around your calendar events
-- **Deadlines**: whether you'll make the one you set (*On track / Tight / At risk*) and the latest time you can start. If you didn't set one, it suggests a realistic deadline.
+- **Deadlines**: a live countdown for every task and project deadline, whether you'll make it (*On track / Tight / At risk*), and the latest time you can start. If you didn't set a deadline, it suggests a realistic one.
 - **Timer**: tap ▶ on any task. Tracked time lowers what's left and moves the plan.
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
-- **Calendar**: work blocks and deadlines go into a **"Paced"** calendar on your iPhone, with alerts, and your events are read back so work is never planned during a lecture. This goes through one Apple Shortcut (setup below).
+- **Calendar, automatically**: your events are read every time you open Paced, and work blocks and deadlines go into a **"Paced"** calendar with alerts whenever your plan changes.
 
-No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your iPhone, inside the Home Screen app. Use **Settings → Back up tasks** now and then.
+No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your iPhone (in Safari's storage for this site). Use **Settings → Back up tasks** now and then.
 
 ---
 
 ## Connect your calendar (one time, about 10 minutes)
 
-Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You build one shortcut called **Paced Sync**. When you tap **Sync with Calendar** in Paced, the shortcut:
+Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You build one shortcut called **Paced Sync** and put it on your Home Screen as the Paced icon:
 
-1. replaces the future events in your "Paced" calendar with the current plan (work blocks + deadlines), then
-2. reads your events for the next 4 weeks and copies them, so you can tap **Paste calendar** back in Paced.
+- **Tap the icon:** it reads your next 4 weeks of events and opens Paced with them already loaded.
+- **When your tasks or events have changed**, Paced passes the new plan to the shortcut (iPhone asks "Open in Shortcuts?" → Open). The shortcut puts work blocks and deadlines into the "Paced" calendar and brings you straight back.
 
 The same steps are inside the app (Settings → Shortcut setup guide).
 
@@ -45,30 +45,38 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 13. Still inside: add "Add New Event". Title: EvTitle. Start Date: EvStart. End Date: EvEnd. Calendar: Paced. Tap Show More → Alert: 5 minutes before (or whatever you like).
 14. Leave the "Otherwise" part empty.
 
-### Part 2: read your events back
-*These go at the very bottom, after "End If".*
+### Part 2: read your events and open Paced
+*These go at the very bottom, after "End If". (Built an older version with Copy to Clipboard? Delete Copy to Clipboard and Show Notification, then do the last two steps here.)*
 
 15. Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.
 16. Add "Repeat with Each" for those Calendar Events.
 17. Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.
 18. After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.
 19. Add another "Text": type PACED-BUSY, press return, then insert Combined Text.
-20. Add "Copy to Clipboard" (it copies that Text).
-21. Add "Show Notification": "Calendar synced. Go back to Paced and tap Paste calendar."
+20. Add "URL Encode" (it encodes that Text).
+21. Add "Open URLs". In its URL field type https://karthiksundaram06.github.io/paced/?sync=done&result=  and straight after "result=" insert URL Encoded Text. Nothing after it.
+
+### Part 3: make it your Paced icon
+*Opening Paced through this icon syncs your calendar every time, without any taps.*
+
+22. Save the icon: open https://karthiksundaram06.github.io/paced/icon-512.png in Safari → long-press the image → Save to Photos.
+23. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
+24. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
 
 ### Try it
 
-22. Tap ▶ in the shortcut editor once. Allow calendar access when asked. It copies your events.
-23. Come back here and tap Paste calendar. Your events now show on Today, and work is planned around them.
-24. From now on, just tap Sync with Calendar. iPhone asks to open Shortcuts: tap Open. The shortcut runs, then you come back and tap Paste calendar.
-25. If Shortcuts asks before removing events, choose Always Allow so it stops asking.
+25. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
+26. When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.
+27. If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.
+28. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 
 ### If something doesn't work
 
 - **"Shortcut not found"**: the shortcut's name must be exactly `Paced Sync`.
-- **Paste says it isn't from the shortcut**: the last Text action must start with the line `PACED-BUSY`, and Copy to Clipboard must come after it.
-- **Paste says dates are unreadable**: in Part 2's Text action, Start Date and End Date need Date Format **ISO 8601** with **Include ISO 8601 Time** on.
-- **Paste button does nothing**: iOS shows a small *Paste* bubble; tap it. If it never appears, long-press the box that shows up, choose Paste, then tap Load.
+- **Paced opens but says the events aren't from the shortcut**: the second Text action must start with the line `PACED-BUSY`, and Open URLs must end with `result=` followed by *URL Encoded Text*.
+- **"Dates are unreadable"**: in Part 2's Text action, Start Date and End Date need Date Format **ISO 8601** with **Include ISO 8601 Time** on.
+- **Shortcut runs but you stay in Shortcuts**: the last action must be **Open URLs** with the Paced address.
+- **Paced keeps sending you to Shortcuts**: it does that at most once every 10 minutes, and only when your plan changed. You can switch it off under Settings → Sync automatically.
 - **Events appear twice**: the "Remove Events" step must be inside the If, filtered to Calendar is *Paced*.
 
 ---
@@ -96,4 +104,4 @@ public/                      page template, manifest, icons, offline service wor
 tests/scheduler.test.ts      npx tsx tests/scheduler.test.ts
 ```
 
-Deploy: `npx expo export --platform web --output-dir dist`, add an empty `dist/.nojekyll` (GitHub Pages would otherwise hide the `_expo` folder), and push `dist/` to the `gh-pages` branch.
+Deploy: `npx expo export --platform web --output-dir dist` → push `dist/` to the `gh-pages` branch (the included GitHub Action does this on every push to `main`).

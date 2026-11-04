@@ -42,6 +42,7 @@ export interface Settings {
   alertMin: number; // alert before each work block
   appCalendarId?: string;
   shortcutReady?: boolean; // web: the Paced Sync shortcut has delivered events at least once
+  autoSync: boolean; // web: send the plan to the calendar automatically when Paced opens and it's out of date
 }
 
 export interface SyncState {
@@ -49,7 +50,9 @@ export interface SyncState {
   lastSyncHash?: string;
   lastError?: string;
   lastWritten?: number;
-  pendingPaste?: boolean; // web: the shortcut was opened and its result hasn't been pasted yet
+  pendingPaste?: boolean; // web: the shortcut was opened and its result hasn't come back yet
+  lastAutoAt?: number; // web: last automatic hand-off to Shortcuts (loop guard)
+  writtenBusyKey?: string; // web: calendar events the last written plan was based on
 }
 
 export interface BusyInterval {
@@ -114,4 +117,5 @@ export const DEFAULT_SETTINGS: Settings = {
   ignoreAllDay: true,
   writeToCalendar: true,
   alertMin: 5,
+  autoSync: true,
 };
