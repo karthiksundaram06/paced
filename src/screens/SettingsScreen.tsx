@@ -137,7 +137,7 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
           <Card>
             {row(
               'Update Calendar automatically',
-              'Off: Paced never opens Shortcuts by itself. Your events still refresh every time you open Paced from its icon; tap Sync now when you want your work blocks in Calendar. On: Paced does that for you whenever your plan changes, which briefly opens Shortcuts.',
+              'On: a few seconds after you add, finish or delete a task, Paced updates your Calendar (Shortcuts opens for a moment). It never does this just because you opened Paced. Off: tap Sync now when you want it. Either way, your events refresh in the background whenever you open Paced from its icon.',
               <Switch value={settings.autoWrite} onValueChange={(v) => updateSettings({ autoWrite: v })} trackColor={{ true: t.accent }} />
             )}
           </Card>

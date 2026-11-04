@@ -395,18 +395,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', onHash);
   }, [loaded]);
 
-  // Does the calendar need the current plan?
-  // - you changed tasks since the last sync: yes, soon (but not twice within 30 s)
-  // - your events changed, or it's been 6 h: yes, but at most every 10 min (prevents ping-pong)
+  // Does the calendar need the current plan? Only when you added, changed, finished or deleted
+  // tasks since the last sync (never just because Paced was opened), and not twice within 30 s.
   const needsWrite = useCallback(() => {
-    const { settings: s, sync: sy, busy: b, dataChangedAt: changed } = ref.current;
+    const { settings: s, sync: sy, dataChangedAt: changed } = ref.current;
     if (!s.shortcutReady || !s.autoWrite) return false;
-    const t = Date.now();
-    const sinceHandoff = sy.lastAutoAt ? t - sy.lastAutoAt : Infinity;
-    if ((changed ?? 0) > (sy.lastSyncAt ?? 0)) return sinceHandoff > 30_000;
-    if (sinceHandoff < 10 * 60_000) return false;
-    if (!sy.lastSyncAt || t - sy.lastSyncAt > 6 * 3600_000) return true;
-    return busyKey(b) !== sy.writtenBusyKey;
+    const sinceHandoff = sy.lastAutoAt ? Date.now() - sy.lastAutoAt : Infinity;
+    return (changed ?? 0) > (sy.lastSyncAt ?? 0) && sinceHandoff > 30_000;
   }, []);
 
   const autoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
