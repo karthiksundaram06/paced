@@ -23,6 +23,7 @@ export const GUIDE: GuideSection[] = [
       'Add "If". Tap its first field → Shortcut Input. Set the condition to "has any value". If a line "Receive … input from Nowhere" appears at the top, tap Nowhere → turn on Share Sheet.',
       'Inside the If (before "Otherwise"), add "Find Calendar Events". Add filter: Calendar is Paced. Add filter: End Date is in the next 60 days.',
       'Add "Remove Events" (it uses the Calendar Events found above).',
+      'Add a second "Find Calendar Events" right under it (clear its input if it says "Filter …"). Set Start Date · is in the last · 1 · days, then Add Filter → Calendar is Paced. Then add another "Remove Events" under it. This clears blocks that already started, so finished or deleted tasks and old copies disappear too.',
       'Add "Get Dictionary from Input" and set its input to Shortcut Input.',
       'Add "Get Dictionary Value": Get Value for key events in Dictionary.',
       'Add "Repeat with Each" and set it to the Dictionary Value from the step above.',

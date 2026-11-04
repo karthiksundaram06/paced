@@ -38,40 +38,41 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 4. Add "If". Tap its first field → Shortcut Input. Set the condition to "has any value". If a line "Receive … input from Nowhere" appears at the top, tap Nowhere → turn on Share Sheet.
 5. Inside the If (before "Otherwise"), add "Find Calendar Events". Add filter: Calendar is Paced. Add filter: End Date is in the next 60 days.
 6. Add "Remove Events" (it uses the Calendar Events found above).
-7. Add "Get Dictionary from Input" and set its input to Shortcut Input.
-8. Add "Get Dictionary Value": Get Value for key events in Dictionary.
-9. Add "Repeat with Each" and set it to the Dictionary Value from the step above.
-10. Inside the Repeat: add "Get Dictionary Value": Value for key t in Repeat Item. Then add "Set Variable" and name it EvTitle.
-11. Still inside: "Get Dictionary Value" for key s in Repeat Item, then "Set Variable" EvStart.
-12. Still inside: "Get Dictionary Value" for key e in Repeat Item, then "Set Variable" EvEnd.
-13. Still inside: add "Add New Event". Title: EvTitle. Start Date: EvStart. End Date: EvEnd. Calendar: Paced. Tap Show More → Alert: 5 minutes before (or whatever you like).
-14. Leave the "Otherwise" part empty.
+7. Add a second "Find Calendar Events" right under it (clear its input if it says "Filter …"). Set Start Date · is in the last · 1 · days, then Add Filter → Calendar is Paced. Then add another "Remove Events" under it. This clears blocks that already started, so finished or deleted tasks and old copies disappear too.
+8. Add "Get Dictionary from Input" and set its input to Shortcut Input.
+9. Add "Get Dictionary Value": Get Value for key events in Dictionary.
+10. Add "Repeat with Each" and set it to the Dictionary Value from the step above.
+11. Inside the Repeat: add "Get Dictionary Value": Value for key t in Repeat Item. Then add "Set Variable" and name it EvTitle.
+12. Still inside: "Get Dictionary Value" for key s in Repeat Item, then "Set Variable" EvStart.
+13. Still inside: "Get Dictionary Value" for key e in Repeat Item, then "Set Variable" EvEnd.
+14. Still inside: add "Add New Event". Title: EvTitle. Start Date: EvStart. End Date: EvEnd. Calendar: Paced. Tap Show More → Alert: 5 minutes before (or whatever you like).
+15. Leave the "Otherwise" part empty.
 
 ### Part 2: read your events and open Paced
 *These go at the very bottom, after "End If". (Built an older version with Copy to Clipboard? Delete Copy to Clipboard and Show Notification, then do the last two steps here.)*
 
-15. Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.
-16. Add "Repeat with Each" for those Calendar Events.
-17. Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.
-18. After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.
-19. Add another "Text": type PACED-BUSY, press return, then insert Combined Text.
-20. Add "URL Encode" (it encodes that Text).
-21. Add "URL" (the plain one, blue link icon). Replace its address with https://karthiksundaram06.github.io/paced/#sync=done&result=  and straight after "result=" insert URL Encoded Text. Nothing after it.
-22. Add "Open URLs". It should say "Open URL". (If you get "sharing … Calendar items is not allowed": Settings app → Apps → Shortcuts → Advanced → turn on Allow Sharing Large Amounts of Data.)
+16. Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.
+17. Add "Repeat with Each" for those Calendar Events.
+18. Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.
+19. After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.
+20. Add another "Text": type PACED-BUSY, press return, then insert Combined Text.
+21. Add "URL Encode" (it encodes that Text).
+22. Add "URL" (the plain one, blue link icon). Replace its address with https://karthiksundaram06.github.io/paced/#sync=done&result=  and straight after "result=" insert URL Encoded Text. Nothing after it.
+23. Add "Open URLs". It should say "Open URL". (If you get "sharing … Calendar items is not allowed": Settings app → Apps → Shortcuts → Advanced → turn on Allow Sharing Large Amounts of Data.)
 
 ### Part 3: make it your Paced icon
 *Opening Paced through this icon syncs your calendar every time, without any taps.*
 
-23. Save the icon: open https://karthiksundaram06.github.io/paced/icon-512.png in Safari → long-press the image → Save to Photos.
-24. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
-25. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
+24. Save the icon: open https://karthiksundaram06.github.io/paced/icon-512.png in Safari → long-press the image → Save to Photos.
+25. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
+26. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
 
 ### Try it
 
-26. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
-27. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
-28. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
-29. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
+27. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
+28. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
+29. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
+30. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 
 ### If something doesn't work
 
@@ -81,7 +82,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 - **Safari says "URI Too Long"**: the address in the URL action has `?sync=` instead of `#sync=`.
 - **Shortcut runs but you stay in Shortcuts**: the last action must be **Open URLs** with the Paced address.
 - **Paced keeps sending you to Shortcuts**: switch off Settings → Update Calendar automatically.
-- **Events appear twice**: the "Remove Events" step must be inside the If, filtered to Calendar is *Paced*.
+- **Blocks appear twice, or finished tasks stay in Calendar**: Part 1 needs both Find + Remove pairs ("in the next 60 days" and "in the last 1 days"), each filtered to Calendar is *Paced*, inside the If.
 
 ---
 
