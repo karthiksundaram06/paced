@@ -166,10 +166,12 @@ export function buildPlan({ tasks, projects, busy, settings, timer, now }: PlanI
         if (len < Math.min(settings.minChunkMin, rem)) break;
         const wanted = Math.min(rem, settings.maxChunkMin);
         let chunk = Math.min(wanted, len);
-        // Avoid leaving a crumb smaller than the minimum block for later.
+        // Avoid leaving a crumb smaller than the minimum block for later: shrink this block if it can
+        // stay above the minimum, otherwise keep the work together for the next free slot.
         const tail = rem - chunk;
-        if (tail > 0 && tail < settings.minChunkMin && chunk - (settings.minChunkMin - tail) >= settings.minChunkMin) {
-          chunk -= settings.minChunkMin - tail;
+        if (tail > 0 && tail < settings.minChunkMin) {
+          if (chunk - (settings.minChunkMin - tail) >= settings.minChunkMin) chunk -= settings.minChunkMin - tail;
+          else break;
         }
         blocks.push({ taskId: task.id, start: slot.start, end: slot.start + chunk * MIN });
         slot.start += (chunk + settings.breakMin) * MIN;
