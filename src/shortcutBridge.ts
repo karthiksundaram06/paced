@@ -17,7 +17,8 @@ export const BUSY_HEADER = 'PACED-BUSY';
 export const SYNC_DAYS = 14;
 /** Where the shortcut sends you back to, with your events in ?result= */
 export const PACED_URL = 'https://karthiksundaram06.github.io/paced/';
-export const RETURN_PREFIX = `${PACED_URL}?sync=done&result=`;
+// After '#', so the events never go to the server (GitHub rejects long addresses) and stay on the phone.
+export const RETURN_PREFIX = `${PACED_URL}#sync=done&result=`;
 
 /** Fingerprint of calendar events, to know whether the written plan was based on the current ones. */
 export function busyKey(busy: BusyInterval[]): string {
@@ -38,7 +39,7 @@ export interface ShortcutReturn {
  * an unencoded "+" (as in "+01:00") into a space.
  */
 export function parseShortcutReturn(search: string): ShortcutReturn | null {
-  let q = search.startsWith('?') ? search.slice(1) : search;
+  let q = search.startsWith('?') || search.startsWith('#') ? search.slice(1) : search;
   if (!q) return null;
   const params: Record<string, string> = {};
   // "result" is always last; take everything after it, so an unencoded "&" in an event title can't cut it short.
@@ -112,7 +113,7 @@ export function shortcutUrl(events: SyncEvent[], returnBase?: string): string {
   const payload = JSON.stringify({ events });
   const base = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(payload)}`;
   if (!returnBase) return base;
-  return `${base}&x-error=${encodeURIComponent(`${returnBase}?sync=error`)}&x-cancel=${encodeURIComponent(`${returnBase}?sync=cancel`)}`;
+  return `${base}&x-error=${encodeURIComponent(`${returnBase}#sync=error`)}&x-cancel=${encodeURIComponent(`${returnBase}#sync=cancel`)}`;
 }
 
 /** Strict ISO-8601 parser: Safari's Date.parse rejects some variants Shortcuts can produce (e.g. "+0100"). */
