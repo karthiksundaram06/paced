@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
+import { CountdownPill } from '../components/Countdown';
 import { Screen } from '../components/Screen';
 import { deadlineLine } from '../components/TaskRow';
 import { clock, dayLabel, duration, relative, when } from '../format';
@@ -139,6 +140,7 @@ export function PlanScreen({
                     </Text>
                     <StatusPill status={pp.status} />
                   </View>
+                  {pp.deadline !== undefined && <CountdownPill to={pp.deadline} />}
                   <View style={{ flexDirection: 'row', gap: 16 }}>
                     <Stat label="Time to complete" value={duration(pp.remainingMin)} />
                     <Stat label="Done by" value={pp.projectedFinish ? when(pp.projectedFinish, now) : '—'} />

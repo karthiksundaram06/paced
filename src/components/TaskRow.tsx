@@ -6,6 +6,7 @@ import { useStore } from '../store';
 import { useTheme } from '../theme';
 import type { Task, TaskPlan } from '../types';
 import { Icon, Progress, RoundButton, StatusPill } from '../ui';
+import { CountdownPill } from './Countdown';
 
 /** One-line explanation of where a task stands: deadline, finish time, what to do. */
 export function deadlineLine(task: Task, tp: TaskPlan | undefined, now: number): { text: string; tone: 'normal' | 'warn' | 'danger' } {
@@ -77,6 +78,8 @@ export function TaskRow({ task, onPress, showProject = false }: { task: Task; on
             {task.title}
           </Text>
         </View>
+
+        {!task.done && tp?.deadline !== undefined && <CountdownPill to={tp.deadline} />}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {!task.done && tp && <StatusPill status={tp.status} />}

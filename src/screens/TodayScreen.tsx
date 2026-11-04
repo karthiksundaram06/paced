@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
+import { CountdownBig } from '../components/Countdown';
 import { Screen } from '../components/Screen';
 import { deadlineLine } from '../components/TaskRow';
 import { clock, duration, longDate, relative, stopwatch, when } from '../format';
@@ -46,9 +47,38 @@ export function TodayScreen({
   const nextBlock = plan.blocks.find((b) => b.end > now && taskById.has(b.taskId));
   const nextTask = nextBlock ? taskById.get(nextBlock.taskId) : undefined;
 
-  const dueSoon = tasks
-    .filter((x) => !x.done && plan.tasks[x.id]?.deadline !== undefined && plan.tasks[x.id].deadline! < addDays(dayStart, 8))
-    .sort((a, b) => plan.tasks[a.id].deadline! - plan.tasks[b.id].deadline!);
+  // Every open deadline, tasks and projects, soonest (or overdue) first.
+  type DeadlineItem = { key: string; title: string; deadline: number; color: string; detail: string; status: import('../types').RiskStatus; open: () => void };
+  const deadlines: DeadlineItem[] = [
+    ...tasks
+      .filter((x) => !x.done && plan.tasks[x.id]?.deadline !== undefined)
+      .map((x) => {
+        const tp = plan.tasks[x.id];
+        return {
+          key: `t-${x.id}`,
+          title: x.title,
+          deadline: tp.deadline!,
+          color: projectColor(x),
+          detail: `Due ${when(tp.deadline!, now)} · ${duration(tp.remainingMin)} of work left`,
+          status: tp.status,
+          open: () => onOpenTask(x),
+        };
+      }),
+    ...projects
+      .filter((p) => p.deadline !== undefined && (plan.projects[p.id]?.openTasks ?? 0) > 0)
+      .map((p) => {
+        const pp = plan.projects[p.id];
+        return {
+          key: `p-${p.id}`,
+          title: `${p.name} (project)`,
+          deadline: p.deadline!,
+          color: p.color,
+          detail: `Due ${when(p.deadline!, now)} · ${duration(pp.remainingMin)} left in ${pp.openTasks} task${pp.openTasks > 1 ? 's' : ''}`,
+          status: pp.status,
+          open: () => {},
+        };
+      }),
+  ].sort((a, b) => a.deadline - b.deadline);
   const atRisk = tasks.filter((x) => !x.done && ['late', 'unscheduled'].includes(plan.tasks[x.id]?.status));
 
   return (
@@ -92,6 +122,11 @@ export function TodayScreen({
           <View style={{ marginVertical: 4 }}>
             <Progress value={loggedSecNow(runningTask, timer, now) / 60 / runningTask.estimateMin} color={t.accentText} />
           </View>
+          {plan.tasks[runningTask.id]?.deadline !== undefined && (
+            <Text style={{ color: t.accentText, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+              Deadline {when(plan.tasks[runningTask.id].deadline!, now)}
+            </Text>
+          )}
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button title="Pause" icon="pause" kind="secondary" onPress={s.stopTimer} style={{ flex: 1 }} />
             <Button title="Done" icon="checkmark" kind="secondary" onPress={() => s.setDone(runningTask.id, true)} style={{ flex: 1 }} />
@@ -110,6 +145,7 @@ export function TodayScreen({
             {duration(plan.tasks[nextTask.id]?.remainingMin ?? 0)} left in total
           </Muted>
           <Muted style={{ fontSize: 13 }}>{deadlineLine(nextTask, plan.tasks[nextTask.id], now).text}</Muted>
+          {plan.tasks[nextTask.id]?.deadline !== undefined && <CountdownBig to={plan.tasks[nextTask.id].deadline!} />}
           <Button title="Start timer" icon="play" onPress={() => s.startTimer(nextTask.id)} style={{ marginTop: 4 }} />
         </Card>
       ) : (
@@ -191,30 +227,27 @@ export function TodayScreen({
       )}
 
       {/* Deadlines */}
-      {dueSoon.length > 0 && (
+      {deadlines.length > 0 && (
         <>
-          <SectionTitle>Deadlines this week</SectionTitle>
-          <Card style={{ padding: 0 }}>
-            {dueSoon.map((x, i) => {
-              const tp = plan.tasks[x.id];
-              return (
-                <Pressable
-                  key={x.id}
-                  onPress={() => onOpenTask(x)}
-                  style={{ padding: 14, gap: 4, borderTopWidth: i ? 0.5 : 0, borderTopColor: t.border }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: t.text, fontWeight: '700', flex: 1 }} numberOfLines={1}>
-                      {x.title}
-                    </Text>
-                    <StatusPill status={tp.status} />
-                  </View>
-                  <Muted style={{ fontSize: 13 }}>
-                    Due {when(tp.deadline!, now)} ({relative(tp.deadline!, now)}) · {duration(tp.remainingMin)} of work left
-                  </Muted>
-                </Pressable>
-              );
-            })}
+          <SectionTitle>Deadline countdowns</SectionTitle>
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
+            {deadlines.map((d, i) => (
+              <Pressable
+                key={d.key}
+                onPress={d.open}
+                style={{ padding: 14, gap: 6, borderTopWidth: i ? 0.5 : 0, borderTopColor: t.border }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: d.color }} />
+                  <Text style={{ color: t.text, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+                    {d.title}
+                  </Text>
+                  <StatusPill status={d.status} />
+                </View>
+                <CountdownBig to={d.deadline} label={false} style={{ fontSize: 26 }} />
+                <Muted style={{ fontSize: 13 }}>{d.detail}</Muted>
+              </Pressable>
+            ))}
           </Card>
         </>
       )}
