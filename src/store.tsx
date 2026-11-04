@@ -512,7 +512,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if ('busyCalendarIds' in patch || 'ignoreAllDay' in patch || 'horizonDays' in patch) {
       setTimeout(() => refreshBusy(), 50);
     }
-    bump();
+    // Colour and sync preferences don't change the plan, so they don't need a calendar update.
+    const cosmetic = ['accent', 'autoSync'];
+    if (Object.keys(patch).some((k) => !cosmetic.includes(k))) bump();
   };
 
   const resetAll = async () => {

@@ -43,6 +43,7 @@ export interface Settings {
   appCalendarId?: string;
   shortcutReady?: boolean; // web: the Paced Sync shortcut has delivered events at least once
   autoSync: boolean; // web: send the plan to the calendar automatically when Paced opens and it's out of date
+  accent: string; // colour key from ACCENTS in theme.ts
 }
 
 export interface SyncState {
@@ -118,4 +119,5 @@ export const DEFAULT_SETTINGS: Settings = {
   writeToCalendar: true,
   alertMin: 5,
   autoSync: true,
+  accent: 'indigo',
 };

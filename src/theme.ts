@@ -1,3 +1,4 @@
+import { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import type { RiskStatus } from './types';
 
@@ -52,8 +53,28 @@ const dark: Theme = {
   busy: '#4A4A52',
 };
 
+/** Accent colours you can pick in Settings → Appearance (light-mode / dark-mode shades). */
+export const ACCENTS = [
+  { key: 'indigo', name: 'Indigo', light: '#4F46E5', dark: '#818CF8' },
+  { key: 'blue', name: 'Blue', light: '#2563EB', dark: '#60A5FA' },
+  { key: 'teal', name: 'Teal', light: '#0D9488', dark: '#2DD4BF' },
+  { key: 'green', name: 'Green', light: '#16A34A', dark: '#4ADE80' },
+  { key: 'orange', name: 'Orange', light: '#EA580C', dark: '#FB923C' },
+  { key: 'red', name: 'Red', light: '#DC2626', dark: '#F87171' },
+  { key: 'pink', name: 'Pink', light: '#DB2777', dark: '#F472B6' },
+  { key: 'purple', name: 'Purple', light: '#9333EA', dark: '#C084FC' },
+] as const;
+
+export const AccentContext = createContext<string>('indigo');
+
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light;
+  const scheme = useColorScheme();
+  const accentKey = useContext(AccentContext);
+  return useMemo(() => {
+    const base = scheme === 'dark' ? dark : light;
+    const a = ACCENTS.find((x) => x.key === accentKey);
+    return a ? { ...base, accent: base.dark ? a.dark : a.light } : base;
+  }, [scheme, accentKey]);
 }
 
 export const PROJECT_COLORS = ['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#64748B'];

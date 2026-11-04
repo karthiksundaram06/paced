@@ -10,7 +10,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TasksScreen } from './src/screens/TasksScreen';
 import { TodayScreen } from './src/screens/TodayScreen';
 import { StoreProvider, useStore } from './src/store';
-import { useTheme } from './src/theme';
+import { AccentContext, useTheme } from './src/theme';
 import type { Project, Task } from './src/types';
 import { Icon, type IconName } from './src/ui';
 
@@ -110,11 +110,21 @@ function Main() {
   );
 }
 
+/** Hands the chosen accent colour to every screen. */
+function Themed() {
+  const { settings } = useStore();
+  return (
+    <AccentContext.Provider value={settings.accent ?? 'indigo'}>
+      <Main />
+    </AccentContext.Provider>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
-        <Main />
+        <Themed />
       </StoreProvider>
     </SafeAreaProvider>
   );
