@@ -134,6 +134,13 @@ export function parseIsoDate(s: string): number | null {
   return utc - offsetMin * MIN;
 }
 
+/** All-day events come back from Shortcuts as midnight-to-midnight spans of whole days. */
+export function looksAllDay(b: BusyInterval): boolean {
+  const s = new Date(b.start);
+  const len = b.end - b.start;
+  return s.getHours() === 0 && s.getMinutes() === 0 && len >= 23 * 3600_000 && Math.abs(len / 86400_000 - Math.round(len / 86400_000)) < 0.05;
+}
+
 export interface ParsedBusy {
   busy: BusyInterval[];
   skipped: number;
