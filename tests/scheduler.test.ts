@@ -220,7 +220,7 @@ test('sync payload has blocks and deadlines in Shortcuts date format', () => {
   assert.ok(url.startsWith('shortcuts://x-callback-url/run-shortcut?name=Paced%20Sync&input=text&text='));
   assert.deepEqual(JSON.parse(decodeURIComponent(url.split('&text=')[1])).events, ev);
   const withReturn = shortcutUrl(ev, 'https://x.io/paced/');
-  assert.ok(withReturn.endsWith('&x-cancel=' + encodeURIComponent('https://x.io/paced/?sync=cancel')));
+  assert.ok(withReturn.endsWith('&x-cancel=' + encodeURIComponent('https://x.io/paced/#sync=cancel')));
   assert.ok(!withReturn.includes('x-success'));
 });
 
@@ -244,6 +244,8 @@ test('events come back from the shortcut in the URL, "+" offsets intact', () => 
   });
   const rawAmp = parseShortcutReturn('?sync=done&result=PACED-BUSY%0A2026-11-05T09:00:00+01:00|2026-11-05T10:00:00+01:00|Q&A session')!;
   assert.equal(parseBusyText(rawAmp.result!)!.busy[0].title, 'Q&A session');
+  const viaHash = parseShortcutReturn('#sync=done&result=' + encodeURIComponent(busyText))!;
+  assert.equal(parseBusyText(viaHash.result!)!.busy.length, 1);
   assert.equal(parseShortcutReturn(''), null);
   assert.equal(parseShortcutReturn('?utm=1'), null);
 });

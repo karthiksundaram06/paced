@@ -343,10 +343,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /* ---- web: automatic calendar sync ---- */
 
-  // Coming back from the shortcut: …/paced/?sync=done&result=PACED-BUSY…
-  useEffect(() => {
-    if (!loaded || !IS_WEB) return;
-    const ret = parseShortcutReturn(window.location.search);
+  // Coming back from the shortcut: …/paced/#sync=done&result=PACED-BUSY… (or ?sync=… from older shortcuts)
+  const takeReturnRef = useRef<() => void>(() => {});
+  takeReturnRef.current = () => {
+    const { hash, search } = window.location;
+    const ret = parseShortcutReturn(hash.length > 1 ? hash : search);
     if (!ret) return;
     window.history.replaceState(null, '', window.location.pathname);
     if (ret.status === 'done' && ret.result !== undefined) {
@@ -356,7 +357,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSync((x) => ({ ...x, pendingPaste: false }));
       if (ret.status === 'error') setNotice({ ok: false, text: `The shortcut stopped with an error${ret.error ? `: ${ret.error}` : ''}.` });
     }
-  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
+  useEffect(() => {
+    if (!loaded || !IS_WEB) return;
+    takeReturnRef.current();
+    // Safari may reuse an open Paced tab and only change the part after '#'.
+    const onHash = () => takeReturnRef.current();
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [loaded]);
 
   // Does the calendar need the current plan? (tasks changed, events changed, or it's been a while)
   const needsWrite = useCallback(() => {

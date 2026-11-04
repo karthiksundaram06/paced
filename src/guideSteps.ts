@@ -43,7 +43,8 @@ export const GUIDE: GuideSection[] = [
       'After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.',
       `Add another "Text": type ${BUSY_HEADER}, press return, then insert Combined Text.`,
       'Add "URL Encode" (it encodes that Text).',
-      `Add "Open URLs". In its URL field type ${RETURN_PREFIX}  and straight after "result=" insert URL Encoded Text. Nothing after it.`,
+      `Add "URL" (the plain one, blue link icon). Replace its address with ${RETURN_PREFIX}  and straight after "result=" insert URL Encoded Text. Nothing after it.`,
+      'Add "Open URLs". It should say "Open URL". (If you get "sharing … Calendar items is not allowed": Settings app → Apps → Shortcuts → Advanced → turn on Allow Sharing Large Amounts of Data.)',
     ],
   },
   {

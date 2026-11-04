@@ -54,27 +54,29 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 18. After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.
 19. Add another "Text": type PACED-BUSY, press return, then insert Combined Text.
 20. Add "URL Encode" (it encodes that Text).
-21. Add "Open URLs". In its URL field type https://karthiksundaram06.github.io/paced/?sync=done&result=  and straight after "result=" insert URL Encoded Text. Nothing after it.
+21. Add "URL" (the plain one, blue link icon). Replace its address with https://karthiksundaram06.github.io/paced/#sync=done&result=  and straight after "result=" insert URL Encoded Text. Nothing after it.
+22. Add "Open URLs". It should say "Open URL". (If you get "sharing … Calendar items is not allowed": Settings app → Apps → Shortcuts → Advanced → turn on Allow Sharing Large Amounts of Data.)
 
 ### Part 3: make it your Paced icon
 *Opening Paced through this icon syncs your calendar every time, without any taps.*
 
-22. Save the icon: open https://karthiksundaram06.github.io/paced/icon-512.png in Safari → long-press the image → Save to Photos.
-23. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
-24. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
+23. Save the icon: open https://karthiksundaram06.github.io/paced/icon-512.png in Safari → long-press the image → Save to Photos.
+24. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
+25. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
 
 ### Try it
 
-25. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
-26. When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.
-27. If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.
-28. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
+26. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
+27. When your tasks or events change, Paced updates your "Paced" calendar by itself the next time you open it. iPhone asks "Open in Shortcuts?": tap Open and you come straight back.
+28. If Shortcuts asks before removing events or opening the URL, choose Always Allow so it stops asking.
+29. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 
 ### If something doesn't work
 
 - **"Shortcut not found"**: the shortcut's name must be exactly `Paced Sync`.
-- **Paced opens but says the events aren't from the shortcut**: the second Text action must start with the line `PACED-BUSY`, and Open URLs must end with `result=` followed by *URL Encoded Text*.
+- **Paced opens but says the events aren't from the shortcut**: the second Text action must start with the line `PACED-BUSY`, and the URL action must end with `#sync=done&result=` followed by *URL Encoded Text*.
 - **"Dates are unreadable"**: in Part 2's Text action, Start Date and End Date need Date Format **ISO 8601** with **Include ISO 8601 Time** on.
+- **Safari says "URI Too Long"**: the address in the URL action has `?sync=` instead of `#sync=`.
 - **Shortcut runs but you stay in Shortcuts**: the last action must be **Open URLs** with the Paced address.
 - **Paced keeps sending you to Shortcuts**: it does that at most once every 10 minutes, and only when your plan changed. You can switch it off under Settings → Sync automatically.
 - **Events appear twice**: the "Remove Events" step must be inside the If, filtered to Calendar is *Paced*.
