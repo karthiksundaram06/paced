@@ -15,6 +15,58 @@ import type { BusyInterval, Plan, Project, Task } from './types';
 export const SHORTCUT_NAME = 'Paced Sync';
 export const BUSY_HEADER = 'PACED-BUSY';
 export const SYNC_DAYS = 14;
+/** Where the shortcut sends you back to, with your events in ?result= */
+export const PACED_URL = 'https://karthiksundaram06.github.io/paced/';
+export const RETURN_PREFIX = `${PACED_URL}?sync=done&result=`;
+
+/** Fingerprint of calendar events, to know whether the written plan was based on the current ones. */
+export function busyKey(busy: BusyInterval[]): string {
+  let h = 5381;
+  const s = busy.map((b) => `${b.start}-${b.end}`).join(',');
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return String(h >>> 0);
+}
+
+export interface ShortcutReturn {
+  status: 'done' | 'error' | 'cancel';
+  result?: string;
+  error?: string;
+}
+
+/**
+ * Read "?sync=done&result=…" from a URL query string. Decoded by hand: URLSearchParams would turn
+ * an unencoded "+" (as in "+01:00") into a space.
+ */
+export function parseShortcutReturn(search: string): ShortcutReturn | null {
+  let q = search.startsWith('?') ? search.slice(1) : search;
+  if (!q) return null;
+  const params: Record<string, string> = {};
+  // "result" is always last; take everything after it, so an unencoded "&" in an event title can't cut it short.
+  const ri = q.startsWith('result=') ? 0 : q.indexOf('&result=') + 1;
+  if (ri > 0 || q.startsWith('result=')) {
+    const raw = q.slice(ri + 'result='.length);
+    try {
+      params.result = decodeURIComponent(raw);
+    } catch {
+      params.result = raw;
+    }
+    q = q.slice(0, Math.max(0, ri - 1));
+  }
+  for (const part of q.split('&')) {
+    if (!part) continue;
+    const i = part.indexOf('=');
+    const k = i < 0 ? part : part.slice(0, i);
+    const v = i < 0 ? '' : part.slice(i + 1);
+    try {
+      params[k] = decodeURIComponent(v);
+    } catch {
+      params[k] = v;
+    }
+  }
+  const status = params.sync as ShortcutReturn['status'] | undefined;
+  if (!status && params.result === undefined) return null;
+  return { status: status ?? 'done', result: params.result, error: params.errorMessage };
+}
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -52,9 +104,15 @@ export function buildSyncEvents(plan: Plan, tasks: Task[], projects: Project[], 
   return events;
 }
 
-export function shortcutUrl(events: SyncEvent[]): string {
+/**
+ * Run the shortcut with the plan. On success the shortcut itself opens Paced again (its last action),
+ * so only error/cancel callbacks are given here.
+ */
+export function shortcutUrl(events: SyncEvent[], returnBase?: string): string {
   const payload = JSON.stringify({ events });
-  return `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(payload)}`;
+  const base = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(payload)}`;
+  if (!returnBase) return base;
+  return `${base}&x-error=${encodeURIComponent(`${returnBase}?sync=error`)}&x-cancel=${encodeURIComponent(`${returnBase}?sync=cancel`)}`;
 }
 
 /** Strict ISO-8601 parser: Safari's Date.parse rejects some variants Shortcuts can produce (e.g. "+0100"). */

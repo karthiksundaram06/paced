@@ -182,7 +182,7 @@ test('blocks never overlap each other', () => {
 console.log(`\n${passed} tests passed`);
 
 /* ---------- Shortcut bridge (web calendar connection) ---------- */
-import { buildSyncEvents, parseBusyText, parseIsoDate, shortcutDate, shortcutUrl } from '../src/shortcutBridge';
+import { buildSyncEvents, parseBusyText, parseIsoDate, parseShortcutReturn, shortcutDate, shortcutUrl } from '../src/shortcutBridge';
 
 test('ISO dates from Shortcuts parse in every variant', () => {
   const expected = Date.UTC(2026, 10, 4, 12, 15); // 13:15 Amsterdam
@@ -217,8 +217,35 @@ test('sync payload has blocks and deadlines in Shortcuts date format', () => {
   assert.deepEqual(ev[1], { t: '⚑ Due: Essay', s: '2026-11-06 16:45', e: '2026-11-06 17:00' });
   assert.equal(shortcutDate(at('2026-01-02T03:04:00')), '2026-01-02 03:04');
   const url = shortcutUrl(ev);
-  assert.ok(url.startsWith('shortcuts://run-shortcut?name=Paced%20Sync&input=text&text='));
+  assert.ok(url.startsWith('shortcuts://x-callback-url/run-shortcut?name=Paced%20Sync&input=text&text='));
   assert.deepEqual(JSON.parse(decodeURIComponent(url.split('&text=')[1])).events, ev);
+  const withReturn = shortcutUrl(ev, 'https://x.io/paced/');
+  assert.ok(withReturn.endsWith('&x-cancel=' + encodeURIComponent('https://x.io/paced/?sync=cancel')));
+  assert.ok(!withReturn.includes('x-success'));
+});
+
+test('events come back from the shortcut in the URL, "+" offsets intact', () => {
+  const busyText = 'PACED-BUSY\n2026-11-05T09:00:00+01:00|2026-11-05T12:00:00+01:00|Lecture & lab';
+  // Shortcuts' URL Encode may or may not encode "+": both must work
+  const encoded = encodeURIComponent(busyText);
+  const loose = encoded.replace(/%2B/g, '+');
+  for (const q of [`?sync=done&result=${encoded}`, `?sync=done&result=${loose}`]) {
+    const r = parseShortcutReturn(q)!;
+    assert.equal(r.status, 'done');
+    const parsed = parseBusyText(r.result!)!;
+    assert.equal(parsed.busy.length, 1);
+    assert.equal(parsed.busy[0].start, Date.UTC(2026, 10, 5, 8, 0));
+    assert.equal(parsed.busy[0].title, 'Lecture & lab');
+  }
+  assert.deepEqual(parseShortcutReturn('?sync=error&errorMessage=Calendar%20access%20denied'), {
+    status: 'error',
+    result: undefined,
+    error: 'Calendar access denied',
+  });
+  const rawAmp = parseShortcutReturn('?sync=done&result=PACED-BUSY%0A2026-11-05T09:00:00+01:00|2026-11-05T10:00:00+01:00|Q&A session')!;
+  assert.equal(parseBusyText(rawAmp.result!)!.busy[0].title, 'Q&A session');
+  assert.equal(parseShortcutReturn(''), null);
+  assert.equal(parseShortcutReturn('?utm=1'), null);
 });
 
 console.log(`${passed} tests passed (incl. bridge)`);
