@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 import * as CalendarApi from '../calendar';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
 import { DateTimeInput } from '../components/DateTimeInput';
@@ -10,8 +10,8 @@ import { pickBackupFile, saveBackup } from '../webFiles';
 import { WEEKDAY_SHORT, duration } from '../format';
 import { startOfDay } from '../scheduler';
 import { IS_WEB, useStore } from '../store';
-import { useTheme } from '../theme';
-import { Button, Card, Chip, Divider, Muted, SectionTitle } from '../ui';
+import { ACCENTS, useTheme } from '../theme';
+import { Button, Card, Chip, Divider, Icon, Muted, SectionTitle } from '../ui';
 
 export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
   const t = useTheme();
@@ -59,6 +59,40 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
 
   return (
     <Screen title="Settings">
+      <SectionTitle>Appearance</SectionTitle>
+      <Card style={{ gap: 12 }}>
+        <Text style={{ color: t.text, fontSize: 16 }}>Colour</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 14, justifyContent: 'space-between' }}>
+          {ACCENTS.map((a) => {
+            const selected = (settings.accent ?? 'indigo') === a.key;
+            const swatch = t.dark ? a.dark : a.light;
+            return (
+              <Pressable
+                key={a.key}
+                onPress={() => updateSettings({ accent: a.key })}
+                style={{ width: '25%', alignItems: 'center', gap: 6 }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: swatch,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 3,
+                    borderColor: selected ? t.text : 'transparent',
+                  }}
+                >
+                  {selected && <Icon name="checkmark" size={22} color={t.dark ? '#0B0B12' : '#FFFFFF'} />}
+                </View>
+                <Text style={{ color: selected ? t.text : t.sub, fontSize: 12, fontWeight: selected ? '700' : '500' }}>{a.name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Card>
+
       <SectionTitle>Calendar</SectionTitle>
       {IS_WEB ? (
         <>
