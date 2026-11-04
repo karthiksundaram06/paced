@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
-import { CountdownBig } from '../components/Countdown';
+import { CountdownBig, CountdownText } from '../components/Countdown';
 import { Screen } from '../components/Screen';
 import { deadlineLine } from '../components/TaskRow';
 import { clock, duration, longDate, relative, stopwatch, when } from '../format';
@@ -44,6 +44,10 @@ export function TodayScreen({
   const plannedToday = plan.blocks.filter((b) => b.start < dayEnd).reduce((m, b) => m + (b.end - b.start) / MIN, 0);
   const remainingTotal = Object.values(plan.tasks).reduce((m, p) => m + p.remainingMin, 0);
   const runningTask = timer ? taskById.get(timer.taskId) : undefined;
+  // A paused task keeps its card (with Resume) until it's finished or dismissed.
+  const pausedTask = !runningTask && s.paused ? tasks.find((x) => x.id === s.paused && !x.done) : undefined;
+  const activeTask = runningTask ?? pausedTask;
+  const isRunning = !!runningTask;
   const nextBlock = plan.blocks.find((b) => b.end > now && taskById.has(b.taskId));
   const nextTask = nextBlock ? taskById.get(nextBlock.taskId) : undefined;
 
@@ -104,32 +108,48 @@ export function TodayScreen({
       )}
 
       {/* Now / Up next */}
-      {runningTask ? (
+      {activeTask ? (
         <Card style={{ backgroundColor: t.accent, gap: 8 }}>
-          <Text style={{ color: t.accentText, opacity: 0.8, fontWeight: '700', fontSize: 13 }}>WORKING ON</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ color: t.accentText, opacity: 0.8, fontWeight: '700', fontSize: 13, flex: 1 }}>
+              {isRunning ? 'WORKING ON' : 'PAUSED'}
+            </Text>
+            {!isRunning && (
+              <Pressable hitSlop={12} onPress={s.dismissPaused} accessibilityLabel="Close">
+                <Icon name="close" size={20} color={t.accentText} />
+              </Pressable>
+            )}
+          </View>
           <Text style={{ color: t.accentText, fontSize: 20, fontWeight: '800' }} numberOfLines={2}>
-            {runningTask.title}
+            {activeTask.title}
           </Text>
-          <Text style={{ color: t.accentText, fontSize: 44, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
-            {stopwatch((now - timer!.startedAt) / 1000)}
+          <Text style={{ color: t.accentText, fontSize: 44, fontWeight: '800', fontVariant: ['tabular-nums'], opacity: isRunning ? 1 : 0.75 }}>
+            {isRunning ? stopwatch((now - timer!.startedAt) / 1000) : stopwatch(activeTask.loggedSec)}
           </Text>
           <Text style={{ color: t.accentText, opacity: 0.9 }}>
-            {duration(loggedSecNow(runningTask, timer, now) / 60)} tracked of {duration(runningTask.estimateMin)} ·{' '}
-            {plan.tasks[runningTask.id]?.remainingMin
-              ? `${duration(plan.tasks[runningTask.id].remainingMin)} left`
+            {duration(loggedSecNow(activeTask, timer, now) / 60)} tracked of {duration(activeTask.estimateMin)} ·{' '}
+            {plan.tasks[activeTask.id]?.remainingMin
+              ? `${duration(plan.tasks[activeTask.id].remainingMin)} left`
               : 'estimate reached'}
           </Text>
           <View style={{ marginVertical: 4 }}>
-            <Progress value={loggedSecNow(runningTask, timer, now) / 60 / runningTask.estimateMin} color={t.accentText} />
+            <Progress value={loggedSecNow(activeTask, timer, now) / 60 / activeTask.estimateMin} color={t.accentText} />
           </View>
-          {plan.tasks[runningTask.id]?.deadline !== undefined && (
-            <Text style={{ color: t.accentText, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
-              Deadline {when(plan.tasks[runningTask.id].deadline!, now)}
-            </Text>
+          {plan.tasks[activeTask.id]?.deadline !== undefined && (
+            <View>
+              <Text style={{ color: t.accentText, opacity: 0.8, fontWeight: '700', fontSize: 13 }}>
+                DEADLINE {when(plan.tasks[activeTask.id].deadline!, now).toUpperCase()}
+              </Text>
+              <CountdownText to={plan.tasks[activeTask.id].deadline!} style={{ color: t.accentText, fontSize: 22, fontWeight: '800' }} />
+            </View>
           )}
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Button title="Pause" icon="pause" kind="secondary" onPress={s.stopTimer} style={{ flex: 1 }} />
-            <Button title="Done" icon="checkmark" kind="secondary" onPress={() => s.setDone(runningTask.id, true)} style={{ flex: 1 }} />
+            {isRunning ? (
+              <Button title="Pause" icon="pause" kind="secondary" onPress={s.stopTimer} style={{ flex: 1 }} />
+            ) : (
+              <Button title="Resume" icon="play" kind="secondary" onPress={() => s.startTimer(activeTask.id)} style={{ flex: 1 }} />
+            )}
+            <Button title="Done" icon="checkmark" kind="secondary" onPress={() => s.setDone(activeTask.id, true)} style={{ flex: 1 }} />
           </View>
         </Card>
       ) : nextBlock && nextTask ? (

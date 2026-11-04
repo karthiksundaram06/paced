@@ -30,6 +30,7 @@ interface Persisted {
   busy?: BusyInterval[];
   busyUpdatedAt?: number;
   dataChangedAt?: number;
+  paused?: string | null;
 }
 
 export interface Store {
@@ -39,6 +40,8 @@ export interface Store {
   projects: Project[];
   settings: Settings;
   timer: RunningTimer | null;
+  /** Task whose timer was paused; Today keeps showing it with a Resume button. */
+  paused: string | null;
   busy: BusyInterval[];
   plan: Plan;
   permission: Permission;
@@ -63,6 +66,7 @@ export interface Store {
 
   startTimer: (taskId: string) => void;
   stopTimer: () => void;
+  dismissPaused: () => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
   connectCalendar: () => Promise<boolean>;
@@ -94,6 +98,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [timer, setTimer] = useState<RunningTimer | null>(null);
+  const [paused, setPaused] = useState<string | null>(null);
   const [sync, setSync] = useState<SyncState>({});
   const [busy, setBusy] = useState<BusyInterval[]>([]);
   const [nativePermission, setPermission] = useState<Permission>('unknown');
@@ -123,6 +128,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBusy(data.busy ?? []);
     setBusyUpdatedAt(data.busyUpdatedAt);
     setDataChangedAt(data.dataChangedAt);
+    setPaused(data.paused ?? null);
   }, []);
 
   useEffect(() => {
@@ -147,14 +153,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     const h = setTimeout(() => {
-      const data: Persisted = { tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt };
+      const data: Persisted = { tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused };
       const json = JSON.stringify(data);
       if (json === lastSavedRef.current) return;
       lastSavedRef.current = json;
       AsyncStorage.setItem(STORAGE_KEY, json).catch(() => {});
     }, 300);
     return () => clearTimeout(h);
-  }, [loaded, tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt]);
+  }, [loaded, tasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused]);
 
   /* ---- clock ---- */
   useEffect(() => {
@@ -437,6 +443,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask: Store['deleteTask'] = (id) => {
     if (ref.current.timer?.taskId === id) setTimer(null);
+    setPaused((p) => (p === id ? null : p));
     setTasks((xs) => xs.filter((x) => x.id !== id));
     bump();
   };
@@ -450,6 +457,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       )
     );
     if (done && tm?.taskId === id) setTimer(null);
+    if (done) setPaused((p) => (p === id ? null : p));
     if (done) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     bump();
   };
@@ -491,6 +499,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (tm?.taskId === taskId) return;
     if (tm) setTasks((xs) => commitTimer(xs, tm, at));
     setTimer({ taskId, startedAt: at });
+    setPaused(null);
     setNow(at);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
   };
@@ -501,9 +510,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!tm) return;
     setTasks((xs) => commitTimer(xs, tm, at));
     setTimer(null);
+    setPaused(tm.taskId);
     setNow(at);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    bump();
+    // Re-plan (native auto-sync), but a pause alone isn't worth bouncing to Shortcuts on the web.
+    setSyncTrigger((n) => n + 1);
   };
 
   /* ---- settings ---- */
@@ -521,6 +532,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTasks([]);
     setProjects([]);
     setTimer(null);
+    setPaused(null);
     setSettings((x) => ({ ...DEFAULT_SETTINGS, appCalendarId: x.appCalendarId }));
     await AsyncStorage.removeItem(STORAGE_KEY);
     bump();
@@ -533,6 +545,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     projects,
     settings,
     timer,
+    paused,
     busy,
     plan,
     permission,
@@ -552,6 +565,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteProject,
     startTimer,
     stopTimer,
+    dismissPaused: () => setPaused(null),
     updateSettings,
     connectCalendar,
     refreshBusy,
