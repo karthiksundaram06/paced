@@ -61,6 +61,13 @@ export function CountdownPill({ to }: { to: number }) {
   );
 }
 
+/** Just the ticking text, for places with their own styling (e.g. the running-timer card). */
+export function CountdownText({ to, style }: { to: number; style?: TextStyle }) {
+  const now = useSecondTick();
+  const left = to - now;
+  return <Text style={[{ fontVariant: ['tabular-nums'] }, style]}>{left > 0 ? `${countdownText(left)} left` : `overdue ${countdownText(left)}`}</Text>;
+}
+
 /** Large ticking number for cards. */
 export function CountdownBig({ to, style, label = true }: { to: number; style?: TextStyle; label?: boolean }) {
   const t = useTheme();
