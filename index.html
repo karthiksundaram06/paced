@@ -25,6 +25,33 @@
   <body>
     <noscript>Paced needs JavaScript.</noscript>
     <div id="root"></div>
+    <div id="boot-error" style="display:none;position:fixed;inset:0;padding:60px 24px;font:16px -apple-system,system-ui,sans-serif;color:#f4f4f6;background:#000;z-index:9999">
+      <div style="font-size:22px;font-weight:800;margin-bottom:12px">Paced didn't start</div>
+      <div id="boot-error-msg" style="white-space:pre-wrap;color:#a1a1aa;font-size:14px;margin-bottom:20px"></div>
+      <button onclick="location.replace(location.pathname)" style="font:inherit;font-weight:700;padding:12px 18px;border:0;border-radius:12px;background:#818cf8;color:#0b0b12">Reload</button>
+    </div>
+    <script>
+      (function () {
+        var errors = [];
+        function show(extra) {
+          var root = document.getElementById('root');
+          if (root && root.children.length && !extra) return;
+          document.getElementById('boot-error-msg').textContent =
+            (errors.length ? errors.join('\n') : 'It took too long to load. Check your connection and tap Reload.') +
+            '\n\nSend a screenshot of this to get it fixed.';
+          document.getElementById('boot-error').style.display = 'block';
+        }
+        window.addEventListener('error', function (e) {
+          errors.push((e.message || 'Error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : ''));
+          var root = document.getElementById('root');
+          if (!root || !root.children.length) show(true);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          errors.push('Promise: ' + (e.reason && (e.reason.message || e.reason)));
+        });
+        setTimeout(function () { show(false); }, 12000);
+      })();
+    </script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
