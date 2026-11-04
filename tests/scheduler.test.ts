@@ -72,6 +72,13 @@ test('no tiny leftover blocks: 100 min becomes 75 + 25', () => {
   assert.deepEqual(plan.tasks[t.id].blocks.map((b) => (b.end - b.start) / MIN), [75, 25]);
 });
 
+test('no 5-minute leftovers: 30 min that only half-fits a gap moves whole to the next slot', () => {
+  const t = task({ estimateMin: 30 });
+  const busy = [{ start: at('2026-11-04T10:30:00'), end: at('2026-11-04T12:00:00') }]; // 10:05–10:30 = 25 min gap
+  const plan = buildPlan({ tasks: [t], projects: [], busy, settings, timer: null, now });
+  assert.deepEqual(plan.tasks[t.id].blocks.map((b) => [b.start, (b.end - b.start) / MIN]), [[at('2026-11-04T12:00:00'), 30]]);
+});
+
 test('work is scheduled around calendar events', () => {
   const t = task({ estimateMin: 120 });
   const busy = [{ start: at('2026-11-04T10:30:00'), end: at('2026-11-04T16:00:00') }];

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
+import { WeekStrip } from '../components/WeekStrip';
 import { CountdownBig, CountdownText } from '../components/Countdown';
 import { Screen } from '../components/Screen';
 import { deadlineLine } from '../components/TaskRow';
@@ -28,6 +29,8 @@ export function TodayScreen({
   const s = useStore();
   // "Deleted · Undo" bar after using the trash button
   const [undo, setUndo] = useState<{ id: string; title: string } | null>(null);
+  // Day picked in the week strip; the Schedule section shows that day.
+  const [selectedDay, setSelectedDay] = useState(() => startOfDay(Date.now()));
   useEffect(() => {
     if (!undo) return;
     const h = setTimeout(() => setUndo(null), 7000);
@@ -39,14 +42,17 @@ export function TodayScreen({
 
   const dayStart = startOfDay(now);
   const dayEnd = addDays(dayStart, 1);
+  const selEnd = addDays(selectedDay, 1);
+  const isTodaySelected = selectedDay === dayStart;
   const agenda: AgendaItem[] = [
     ...busy
-      .filter((b) => b.end > dayStart && b.start < dayEnd)
+      .filter((b) => b.end > selectedDay && b.start < selEnd)
       .map((b) => ({ kind: 'event' as const, start: b.start, end: b.end, title: b.title ?? 'Busy', color: b.calendarColor })),
     ...plan.blocks
-      .filter((b) => b.start < dayEnd && taskById.has(b.taskId))
+      .filter((b) => b.start >= selectedDay && b.start < selEnd && taskById.has(b.taskId))
       .map((b) => ({ kind: 'block' as const, start: b.start, end: b.end, task: taskById.get(b.taskId)! })),
   ].sort((a, b) => a.start - b.start);
+  const selPlanned = agenda.filter((a) => a.kind === 'block').reduce((m, a) => m + (a.end - a.start) / MIN, 0);
 
   const plannedToday = plan.blocks.filter((b) => b.start < dayEnd).reduce((m, b) => m + (b.end - b.start) / MIN, 0);
   const remainingTotal = Object.values(plan.tasks).reduce((m, p) => m + p.remainingMin, 0);
@@ -93,8 +99,38 @@ export function TodayScreen({
   const atRisk = tasks.filter((x) => !x.done && ['late', 'unscheduled'].includes(plan.tasks[x.id]?.status));
 
   return (
-    <Screen title="Today" subtitle={longDate(now)} onRefresh={IS_WEB ? undefined : s.refreshBusy} refreshing={s.refreshing}>
-      {IS_WEB && <CalendarSyncCard compact onOpenGuide={onOpenGuide} />}
+    <Screen
+      title="Today"
+      subtitle={longDate(now)}
+      onRefresh={IS_WEB ? undefined : s.refreshBusy}
+      refreshing={s.refreshing}
+      right={
+        IS_WEB && permission === 'granted' ? (
+          <Pressable
+            onPress={s.syncNow}
+            accessibilityLabel="Sync calendar"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: t.card,
+              borderRadius: 999,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              marginBottom: 6,
+            }}
+          >
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.sync.pendingPaste ? t.warn : t.ok }} />
+            <Text style={{ color: t.sub, fontSize: 12 }}>
+              {s.sync.pendingPaste ? 'Syncing…' : s.busyUpdatedAt ? `Synced ${relative(s.busyUpdatedAt, now)}` : 'Sync'}
+            </Text>
+            <Icon name="refresh" size={15} color={t.accent} />
+          </Pressable>
+        ) : undefined
+      }
+    >
+      <WeekStrip selected={selectedDay} onSelect={setSelectedDay} />
+      {IS_WEB && (permission !== 'granted' || (s.notice && !s.notice.ok)) && <CalendarSyncCard compact onOpenGuide={onOpenGuide} />}
       {!IS_WEB && permission !== 'granted' && (
         <Card style={{ gap: 10, borderWidth: 1, borderColor: t.accent + '55' }}>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
@@ -231,9 +267,24 @@ export function TodayScreen({
       )}
 
       {/* Agenda */}
-      <SectionTitle>Schedule</SectionTitle>
+      <SectionTitle
+        right={
+          !isTodaySelected ? (
+            <Pressable hitSlop={8} onPress={() => setSelectedDay(dayStart)}>
+              <Text style={{ color: t.accent, fontWeight: '700', fontSize: 13 }}>Back to today</Text>
+            </Pressable>
+          ) : undefined
+        }
+      >
+        {isTodaySelected ? 'Schedule' : `Schedule · ${longDate(selectedDay + 12 * 3600_000)}`}
+      </SectionTitle>
+      {!isTodaySelected && selPlanned > 0 && (
+        <Muted style={{ paddingHorizontal: 4, marginTop: -4 }}>{duration(selPlanned)} of work planned</Muted>
+      )}
       {agenda.length === 0 ? (
-        <Muted style={{ paddingHorizontal: 4 }}>No events or work blocks left today.</Muted>
+        <Muted style={{ paddingHorizontal: 4 }}>
+          {isTodaySelected ? 'No events or work blocks left today.' : 'Nothing planned on this day.'}
+        </Muted>
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           {agenda.map((item, i) => {
