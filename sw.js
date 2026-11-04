@@ -1,6 +1,6 @@
 // Offline support: the page is fetched fresh when online (so updates arrive),
 // everything else (hashed JS bundles, fonts, icons) is served from cache first.
-const CACHE = 'paced-v8';
+const CACHE = 'paced-v9';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html'])).then(() => self.skipWaiting()));
