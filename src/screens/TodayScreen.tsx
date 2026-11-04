@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
 import { CountdownBig, CountdownText } from '../components/Countdown';
@@ -26,6 +26,13 @@ export function TodayScreen({
 }) {
   const t = useTheme();
   const s = useStore();
+  // "Deleted · Undo" bar after using the trash button
+  const [undo, setUndo] = useState<{ id: string; title: string } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const h = setTimeout(() => setUndo(null), 7000);
+    return () => clearTimeout(h);
+  }, [undo]);
   const { now, plan, tasks, projects, timer, busy, permission } = s;
   const taskById = new Map(tasks.map((x) => [x.id, x]));
   const projectColor = (task?: Task) => projects.find((p) => p.id === task?.projectId)?.color ?? t.accent;
@@ -107,6 +114,24 @@ export function TodayScreen({
         </Card>
       )}
 
+      {undo && (
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }}>
+          <Icon name="trash-outline" size={18} color={t.sub} />
+          <Text style={{ color: t.text, flex: 1 }} numberOfLines={1}>
+            Deleted "{undo.title}"
+          </Text>
+          <Pressable
+            hitSlop={10}
+            onPress={() => {
+              s.restoreTask(undo.id);
+              setUndo(null);
+            }}
+          >
+            <Text style={{ color: t.accent, fontWeight: '700', fontSize: 16 }}>Undo</Text>
+          </Pressable>
+        </Card>
+      )}
+
       {/* Now / Up next */}
       {activeTask ? (
         <Card style={{ backgroundColor: t.accent, gap: 8 }}>
@@ -154,9 +179,21 @@ export function TodayScreen({
         </Card>
       ) : nextBlock && nextTask ? (
         <Card style={{ gap: 8 }}>
-          <Text style={{ color: t.sub, fontWeight: '700', fontSize: 13 }}>
-            {nextBlock.start <= now + 5 * MIN ? 'DO THIS NOW' : `UP NEXT · ${relative(nextBlock.start, now).toUpperCase()}`}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ color: t.sub, fontWeight: '700', fontSize: 13, flex: 1 }}>
+              {nextBlock.start <= now + 5 * MIN ? 'DO THIS NOW' : `UP NEXT · ${relative(nextBlock.start, now).toUpperCase()}`}
+            </Text>
+            <Pressable
+              hitSlop={12}
+              accessibilityLabel="Delete task"
+              onPress={() => {
+                s.deleteTask(nextTask.id);
+                setUndo({ id: nextTask.id, title: nextTask.title });
+              }}
+            >
+              <Icon name="trash-outline" size={20} color={t.faint} />
+            </Pressable>
+          </View>
           <Pressable onPress={() => onOpenTask(nextTask)}>
             <Text style={{ color: t.text, fontSize: 20, fontWeight: '800' }}>{nextTask.title}</Text>
           </Pressable>
