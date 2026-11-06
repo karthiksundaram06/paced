@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState, Platform } from 'react-native';
 import * as CalendarApi from './calendar';
 import { buildPlan, loggedSecNow, planSignature } from './scheduler';
-import { busyKey, buildSyncEvents, looksAllDay, parseBusyText, parseShortcutReturn, shortcutUrl } from './shortcutBridge';
+import { busyKey, buildSyncEvents, dedupeBusy, looksAllDay, parseBusyText, parseShortcutReturn, shortcutUrl } from './shortcutBridge';
 import {
   DEFAULT_SETTINGS,
   type BusyInterval,
@@ -138,7 +138,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSettings({ ...DEFAULT_SETTINGS, ...(data.settings ?? {}) });
     setTimer(data.timer ?? null);
     setSync(data.sync ?? {});
-    setBusy(data.busy ?? []);
+    setBusy(dedupeBusy(data.busy ?? []));
     setBusyUpdatedAt(data.busyUpdatedAt);
     setDataChangedAt(data.dataChangedAt);
     setPaused(data.paused ?? null);
@@ -336,7 +336,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSync((x) => ({ ...x, pendingPaste: false, lastError: undefined }));
     setNow(Date.now());
     const extra =
-      (parsed.skipped ? ` (${parsed.skipped} skipped: unreadable dates)` : '') + (allDay ? ` · ${allDay} all-day ignored` : '');
+      (parsed.skipped ? ` (${parsed.skipped} skipped: unreadable dates)` : '') +
+      (allDay ? ` · ${allDay} all-day ignored` : '') +
+      (parsed.duplicates ? ` · ${parsed.duplicates} duplicates merged` : '');
     return { ok: true, message: `Loaded ${parsed.busy.length} calendar event${parsed.busy.length === 1 ? '' : 's'}${extra}.` };
   };
 
