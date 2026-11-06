@@ -213,7 +213,7 @@ test('busy text from the shortcut is parsed, own events and junk skipped', () =>
   assert.equal(r.busy[0].title, 'Advanced Data Mining | lecture');
   assert.equal(r.skipped, 1);
   assert.equal(parseBusyText('hello'), null);
-  assert.deepEqual(parseBusyText('PACED-BUSY\n'), { busy: [], skipped: 0 });
+  assert.deepEqual(parseBusyText('PACED-BUSY\n'), { busy: [], skipped: 0, duplicates: 0 });
 });
 
 test('sync payload has blocks and deadlines in Shortcuts date format', () => {
@@ -263,6 +263,17 @@ test('all-day events are recognised, normal ones are not', () => {
   assert.equal(looksAllDay({ start: at('2026-11-05T09:00:00'), end: at('2026-11-05T12:00:00') }), false);
   assert.equal(looksAllDay({ start: at('2026-11-05T00:00:00'), end: at('2026-11-05T08:00:00') }), false);
   assert.equal(looksAllDay({ start: at('2026-10-25T00:00:00'), end: at('2026-10-26T00:00:00') }), true); // 25h DST day
+});
+
+test('the same event in several calendars is shown once', () => {
+  const line = '2026-11-06T11:00:00+01:00|2026-11-06T12:45:00+01:00|4343SNACSY - Social Network Analysis';
+  const other = '2026-11-06T15:15:00+01:00|2026-11-06T17:00:00+01:00|4343QUALGY - Quantum Algorithms';
+  const r = parseBusyText(['PACED-BUSY', line, line, line, line, line, line, other, other].join('\n'))!;
+  assert.equal(r.busy.length, 2);
+  assert.equal(r.duplicates, 6);
+  // same time, different title: both kept
+  const r2 = parseBusyText(['PACED-BUSY', line, line.replace('Social Network Analysis', 'TA shift')].join('\n'))!;
+  assert.equal(r2.busy.length, 2);
 });
 
 console.log(`${passed} tests passed (incl. bridge)`);

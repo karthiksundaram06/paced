@@ -142,9 +142,26 @@ export function looksAllDay(b: BusyInterval): boolean {
   return s.getHours() === 0 && s.getMinutes() === 0 && len >= 23 * 3600_000 && Math.abs(len / 86400_000 - Math.round(len / 86400_000)) < 0.05;
 }
 
+/**
+ * The same event often sits in Calendar more than once (e.g. a timetable subscribed twice).
+ * Keep one per start + end + title.
+ */
+export function dedupeBusy(list: BusyInterval[]): BusyInterval[] {
+  const seen = new Set<string>();
+  const out: BusyInterval[] = [];
+  for (const b of list) {
+    const key = `${b.start}|${b.end}|${(b.title ?? '').trim().toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(b);
+  }
+  return out;
+}
+
 export interface ParsedBusy {
   busy: BusyInterval[];
   skipped: number;
+  duplicates: number;
 }
 
 /** Returns null when the text isn't from the Paced Sync shortcut at all. */
@@ -169,5 +186,6 @@ export function parseBusyText(text: string): ParsedBusy | null {
     busy.push({ start: a, end: b, title });
   }
   busy.sort((x, y) => x.start - y.start);
-  return { busy, skipped };
+  const unique = dedupeBusy(busy);
+  return { busy: unique, skipped, duplicates: busy.length - unique.length };
 }
