@@ -38,7 +38,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 4. Add "If". Tap its first field → Shortcut Input. Set the condition to "has any value". If a line "Receive … input from Nowhere" appears at the top, tap Nowhere → turn on Share Sheet.
 5. Inside the If (before "Otherwise"), add "Find Calendar Events". Add filter: Calendar is Paced. Add filter: End Date is in the next 60 days.
 6. Add "Remove Events" (it uses the Calendar Events found above).
-7. Add a second "Find Calendar Events" right under it (clear its input if it says "Filter …"). Set Start Date · is in the last · 1 · days, then Add Filter → Calendar is Paced. Then add another "Remove Events" under it. This clears blocks that already started, so finished or deleted tasks and old copies disappear too.
+7. Add a second "Find Calendar Events" right under it (clear its input if it says "Filter …"). Set Start Date · is in the last · 30 · days, then Add Filter → Calendar is Paced. Then add another "Remove Events" under it. This clears blocks from past days, so a task you haven't finished doesn't stay behind on every day it was once planned, and finished or deleted tasks disappear too.
 8. Add "Get Dictionary from Input" and set its input to Shortcut Input.
 9. Add "Get Dictionary Value": Get Value for key events in Dictionary.
 10. Add "Repeat with Each" and set it to the Dictionary Value from the step above.
@@ -82,7 +82,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 - **Safari says "URI Too Long"**: the address in the URL action has `?sync=` instead of `#sync=`.
 - **Shortcut runs but you stay in Shortcuts**: the last action must be **Open URLs** with the Paced address.
 - **Paced keeps sending you to Shortcuts**: switch off Settings → Update Calendar automatically.
-- **Blocks appear twice, or finished tasks stay in Calendar**: Part 1 needs both Find + Remove pairs ("in the next 60 days" and "in the last 1 days"), each filtered to Calendar is *Paced*, inside the If.
+- **Blocks appear twice, a task shows up on every day before its deadline, or finished tasks stay in Calendar**: Part 1 needs both Find + Remove pairs ("in the next 60 days" and "in the last 30 days"), each filtered to Calendar is *Paced*, inside the If. Then tap Sync now once.
 
 ---
 
