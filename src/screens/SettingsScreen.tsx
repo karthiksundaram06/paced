@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import * as CalendarApi from '../calendar';
 import { CalendarSyncCard } from '../components/CalendarSyncCard';
+import { WidgetCard } from '../components/WidgetCard';
 import { DateTimeInput } from '../components/DateTimeInput';
 import { Screen } from '../components/Screen';
 import { confirmAction, notify } from '../confirm';
@@ -145,6 +146,8 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
             Which calendars count as busy and how early you get alerts are set inside the "{SHORTCUT_NAME}" shortcut (Find Calendar Events
             filters and the Add New Event alert).
           </Muted>
+          <SectionTitle>Lock Screen countdown</SectionTitle>
+          <WidgetCard />
         </>
       ) : (
       <Card style={{ gap: 12 }}>
