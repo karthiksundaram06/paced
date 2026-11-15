@@ -104,6 +104,7 @@ export function TodayScreen({
       subtitle={longDate(now)}
       onRefresh={IS_WEB ? undefined : s.refreshBusy}
       refreshing={s.refreshing}
+      onPull={IS_WEB && permission === 'granted' ? s.syncNow : undefined}
       right={
         IS_WEB && permission === 'granted' ? (
           <Pressable

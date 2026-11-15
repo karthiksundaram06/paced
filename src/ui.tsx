@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { attachDragDown, domNode } from './dragDown';
 import { statusInfo, useTheme } from './theme';
 import type { RiskStatus } from './types';
+
+const IS_WEB_UI = Platform.OS === 'web';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -164,6 +167,7 @@ export function Sheet({
   onSave,
   saveLabel = 'Save',
   saveDisabled,
+  dirty = false,
   children,
 }: {
   visible: boolean;
@@ -172,27 +176,92 @@ export function Sheet({
   onSave?: () => void;
   saveLabel?: string;
   saveDisabled?: boolean;
+  /** Unsaved changes: swiping down asks before throwing them away. */
+  dirty?: boolean;
   children: React.ReactNode;
 }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const sheetRef = useRef<React.ComponentRef<typeof View>>(null);
+  const headerRef = useRef<React.ComponentRef<typeof View>>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const [askDiscard, setAskDiscard] = useState(false);
+  const latest = useRef({ dirty, onClose });
+  latest.current = { dirty, onClose };
+
+  // Web: drag the sheet down (from the top bar, or anywhere while scrolled to the top) to close it.
+  useEffect(() => {
+    if (!IS_WEB_UI || !visible) return;
+    setAskDiscard(false);
+    let detach: (() => void) | undefined;
+    let tries = 0;
+    const setup = () => {
+      const sheet = sheetRef.current as unknown as HTMLElement | null;
+      const header = headerRef.current as unknown as HTMLElement | null;
+      const scroll = domNode(scrollRef.current);
+      if (!sheet || !header || !scroll) {
+        if (tries++ < 20) raf = requestAnimationFrame(setup);
+        return;
+      }
+      sheet.style.transform = '';
+      const place = (px: number, animate: boolean) => {
+        sheet.style.transition = animate ? 'transform .22s ease-out' : 'none';
+        sheet.style.transform = px ? `translateY(${px}px)` : '';
+      };
+      detach = attachDragDown(sheet, {
+        canStart: (target) => header.contains(target as Node) || scroll.scrollTop <= 0,
+        onMove: (dy) => place(latest.current.dirty ? dy * 0.35 : dy, false),
+        onEnd: (dy, v) => {
+          const dismiss = dy > 120 || (v > 0.5 && dy > 30);
+          if (dismiss && !latest.current.dirty) {
+            place(window.innerHeight, true);
+            setTimeout(() => latest.current.onClose(), 200);
+            return;
+          }
+          place(0, true);
+          if (dismiss) setAskDiscard(true);
+        },
+      });
+    };
+    let raf = requestAnimationFrame(setup);
+    return () => {
+      cancelAnimationFrame(raf);
+      detach?.();
+    };
+  }, [visible]);
+
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: t.bg }}>
-        <View style={[styles.sheetHeader, { borderBottomColor: t.border, backgroundColor: t.card }]}>
-          <Pressable onPress={onClose} hitSlop={10}>
-            <Text style={{ color: t.accent, fontSize: 17 }}>Cancel</Text>
-          </Pressable>
-          <Text style={{ color: t.text, fontSize: 17, fontWeight: '700' }}>{title}</Text>
-          {onSave ? (
-            <Pressable onPress={onSave} hitSlop={10} disabled={saveDisabled}>
-              <Text style={{ color: t.accent, fontSize: 17, fontWeight: '700', opacity: saveDisabled ? 0.35 : 1 }}>{saveLabel}</Text>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={IS_WEB_UI} onRequestClose={onClose}>
+      <View ref={sheetRef} style={{ flex: 1, backgroundColor: t.bg }}>
+        <View ref={headerRef} style={{ backgroundColor: t.card, borderBottomColor: t.border, borderBottomWidth: StyleSheet.hairlineWidth }}>
+          {IS_WEB_UI && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: t.faint, opacity: 0.5, marginTop: 6 }} />}
+          <View style={[styles.sheetHeader, IS_WEB_UI && { paddingTop: 8 }]}>
+            <Pressable onPress={onClose} hitSlop={10}>
+              <Text style={{ color: t.accent, fontSize: 17 }}>Cancel</Text>
             </Pressable>
-          ) : (
-            <View style={{ width: 50 }} />
-          )}
+            <Text style={{ color: t.text, fontSize: 17, fontWeight: '700' }}>{title}</Text>
+            {onSave ? (
+              <Pressable onPress={onSave} hitSlop={10} disabled={saveDisabled}>
+                <Text style={{ color: t.accent, fontSize: 17, fontWeight: '700', opacity: saveDisabled ? 0.35 : 1 }}>{saveLabel}</Text>
+              </Pressable>
+            ) : (
+              <View style={{ width: 50 }} />
+            )}
+          </View>
         </View>
+        {askDiscard && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: t.cardAlt }}>
+            <Text style={{ color: t.text, fontSize: 15, flex: 1 }}>Discard your changes?</Text>
+            <Pressable onPress={() => setAskDiscard(false)} hitSlop={8}>
+              <Text style={{ color: t.accent, fontSize: 15, fontWeight: '600' }}>Keep editing</Text>
+            </Pressable>
+            <Pressable onPress={onClose} hitSlop={8}>
+              <Text style={{ color: t.danger, fontSize: 15, fontWeight: '700' }}>Discard</Text>
+            </Pressable>
+          </View>
+        )}
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40, gap: 16 }}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
@@ -220,5 +289,5 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4 },
   button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, paddingHorizontal: 18, borderRadius: 12 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
 });
