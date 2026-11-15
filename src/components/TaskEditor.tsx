@@ -79,11 +79,22 @@ export function TaskEditor({
     onClose();
   };
 
+  const dirty =
+    visible &&
+    (task
+      ? title !== task.title ||
+        projectId !== task.projectId ||
+        estimateMin !== task.estimateMin ||
+        deadline !== task.deadline ||
+        priority !== task.priority ||
+        notes !== (task.notes ?? '')
+      : !!title.trim() || !!notes.trim() || deadline !== undefined || estimateMin !== 60 || priority !== 2 || projectId !== defaultProjectId);
+
   const logged = task ? loggedSecNow(task, timer, now) / 60 : 0;
   const line = preview ? deadlineLine(preview.draft, preview.tp, now) : null;
 
   return (
-    <Sheet visible={visible} title={task ? 'Edit task' : 'New task'} onClose={onClose} onSave={save} saveDisabled={!title.trim()}>
+    <Sheet visible={visible} title={task ? 'Edit task' : 'New task'} onClose={onClose} onSave={save} saveDisabled={!title.trim()} dirty={dirty}>
       <TextInput
         value={title}
         onChangeText={setTitle}

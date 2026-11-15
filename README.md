@@ -10,6 +10,7 @@ You add a task and say roughly how long it takes. Paced then tells you:
 - **Timer**: tap ▶ on any task; pausing keeps a Resume card on Today. Tracked time lowers what's left and moves the plan.
 - **Deleted tasks** go to Tasks → Deleted for 30 days, so you can restore them.
 - **Appearance**: 8 accent colours and 4 fonts (Default, Notion/Inter, Serif, Mono).
+- **iPhone gestures**: pull Today down to sync your calendar; swipe a task or project editor down to close it (it asks first if you changed something).
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
 - **Calendar**: your events are read every time you open Paced from its icon, and with one tap work blocks and deadlines go into a **"Paced"** calendar with alerts.
 
@@ -22,7 +23,7 @@ No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your
 Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You build one shortcut called **Paced Sync** and put it on your Home Screen as the Paced icon:
 
 - **Tap the icon:** it reads your next 4 weeks of events in the background and opens Paced with them already loaded.
-- **Tap Sync now** when you want your work blocks and deadlines in the "Paced" calendar (iPhone asks "Open in Shortcuts?" → Open, and you come straight back). Paced never opens Shortcuts by itself unless you switch on *Update Calendar automatically*.
+- **Tap Sync now** (or pull Today down and let go) when you want your work blocks and deadlines in the "Paced" calendar (iPhone asks "Open in Shortcuts?" → Open, and you come straight back). Paced never opens Shortcuts by itself unless you switch on *Update Calendar automatically*.
 
 The same steps are inside the app (Settings → Shortcut setup guide).
 

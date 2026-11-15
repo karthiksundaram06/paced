@@ -43,8 +43,12 @@ export function ProjectEditor({ visible, project, onClose }: { visible: boolean;
     );
   };
 
+  const dirty =
+    visible &&
+    (project ? name !== project.name || color !== project.color || deadline !== project.deadline : !!name.trim() || deadline !== undefined);
+
   return (
-    <Sheet visible={visible} title={project ? 'Edit project' : 'New project'} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
+    <Sheet visible={visible} title={project ? 'Edit project' : 'New project'} onClose={onClose} onSave={save} saveDisabled={!name.trim()} dirty={dirty}>
       <TextInput
         value={name}
         onChangeText={setName}
