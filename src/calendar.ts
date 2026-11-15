@@ -161,7 +161,7 @@ export async function syncPlanToCalendar(
   const projectById = new Map(projects.map((p) => [p.id, p]));
   let written = 0;
 
-  for (const b of plan.blocks) {
+  for (const b of settings.calendarBlocks ? plan.blocks : []) {
     if (b.start > windowEnd) break;
     const t = taskById.get(b.taskId);
     if (!t) continue;

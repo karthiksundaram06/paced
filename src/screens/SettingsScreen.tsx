@@ -135,7 +135,13 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
       {IS_WEB ? (
         <>
           <CalendarSyncCard onOpenGuide={onOpenGuide} />
-          <Card>
+          <Card style={{ gap: 12 }}>
+            {row(
+              'Work blocks in Calendar',
+              'Off: Calendar shows each deadline on its day, nothing else. On: it also shows the study and work blocks Paced plans before each deadline (Today always shows them).',
+              <Switch value={settings.calendarBlocks} onValueChange={(v) => updateSettings({ calendarBlocks: v })} trackColor={{ true: t.accent }} />
+            )}
+            <Divider />
             {row(
               'Update Calendar automatically',
               'On: a few seconds after you add, finish or delete a task, Paced updates your Calendar (Shortcuts opens for a moment). It never does this just because you opened Paced. Off: tap Sync now when you want it. Either way, your events refresh in the background whenever you open Paced from its icon.',
@@ -159,11 +165,17 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
         ) : (
           <>
             {row(
-              'Write plan to calendar',
-              'Adds work blocks and deadlines to a separate "Paced" calendar, with alerts',
+              'Write to calendar',
+              'Adds your deadlines to a separate "Paced" calendar, with alerts',
               <Switch value={settings.writeToCalendar} onValueChange={(v) => updateSettings({ writeToCalendar: v })} trackColor={{ true: t.accent }} />
             )}
-            {settings.writeToCalendar && (
+            {settings.writeToCalendar &&
+              row(
+                'Work blocks too',
+                'Also add the work blocks Paced plans before each deadline',
+                <Switch value={settings.calendarBlocks} onValueChange={(v) => updateSettings({ calendarBlocks: v })} trackColor={{ true: t.accent }} />
+              )}
+            {settings.writeToCalendar && settings.calendarBlocks && (
               <View>
                 <Text style={{ color: t.text, fontSize: 16 }}>Alert before each work block</Text>
                 {chips([0, 5, 10, 15], settings.alertMin, (v) => updateSettings({ alertMin: v }), (v) => (v ? `${v} min` : 'None'))}

@@ -96,7 +96,10 @@ export function TodayScreen({
         };
       }),
   ].sort((a, b) => a.deadline - b.deadline);
-  const atRisk = tasks.filter((x) => !x.done && ['late', 'unscheduled'].includes(plan.tasks[x.id]?.status));
+  const atRisk = tasks.filter((x) => !x.done && ['late', 'overdue', 'unscheduled'].includes(plan.tasks[x.id]?.status));
+  const overdue = tasks
+    .filter((x) => !x.done && plan.tasks[x.id]?.status === 'overdue')
+    .sort((a, b) => (plan.tasks[a.id]?.deadline ?? 0) - (plan.tasks[b.id]?.deadline ?? 0));
 
   return (
     <Screen
@@ -139,7 +142,7 @@ export function TodayScreen({
             <Text style={{ color: t.text, fontSize: 16, fontWeight: '700', flex: 1 }}>Connect your calendar</Text>
           </View>
           <Muted>
-            Paced reads your events so it never plans work during a lecture or shift. It also adds your work blocks and deadlines
+            Paced reads your events so it never plans work during a lecture or shift. It also adds your deadlines
             to a separate "Paced" calendar.
           </Muted>
           <Button title="Allow calendar access" icon="lock-open-outline" onPress={s.connectCalendar} />
@@ -166,6 +169,36 @@ export function TodayScreen({
           >
             <Text style={{ color: t.accent, fontWeight: '700', fontSize: 16 }}>Undo</Text>
           </Pressable>
+        </Card>
+      )}
+
+      {overdue.length > 0 && (
+        <Card style={{ gap: 10, borderWidth: 1, borderColor: t.danger + '55' }}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Icon name="alert-circle" color={t.danger} size={20} />
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '700', flex: 1 }}>Deadline passed</Text>
+          </View>
+          <Muted style={{ fontSize: 13 }}>Paced stopped planning these. Mark them done, or tap one to set a new deadline.</Muted>
+          {overdue.slice(0, 4).map((x) => (
+            <View key={x.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Pressable style={{ flex: 1 }} onPress={() => onOpenTask(x)} accessibilityLabel={`Open ${x.title}`}>
+                <Text numberOfLines={1} style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>
+                  {x.title}
+                </Text>
+                <Text style={{ color: t.sub, fontSize: 12 }}>was due {when(plan.tasks[x.id]?.deadline ?? now, now)}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => s.setDone(x.id, true)}
+                hitSlop={6}
+                accessibilityLabel={`Mark ${x.title} done`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.accent + '22', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}
+              >
+                <Icon name="checkmark" size={16} color={t.accent} />
+                <Text style={{ color: t.accent, fontWeight: '700', fontSize: 14 }}>Done</Text>
+              </Pressable>
+            </View>
+          ))}
+          {overdue.length > 4 && <Muted style={{ fontSize: 13 }}>and {overdue.length - 4} more in Tasks</Muted>}
         </Card>
       )}
 

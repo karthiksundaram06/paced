@@ -28,7 +28,7 @@ export function PlanScreen({
 
   const remaining = Object.values(plan.tasks).reduce((m, p) => m + p.remainingMin, 0);
   const load = plan.freeMinInHorizon > 0 ? remaining / plan.freeMinInHorizon : 0;
-  const problems = tasks.filter((x) => !x.done && ['late', 'unscheduled', 'tight'].includes(plan.tasks[x.id]?.status));
+  const problems = tasks.filter((x) => !x.done && ['late', 'overdue', 'unscheduled', 'tight'].includes(plan.tasks[x.id]?.status));
   const lastFinish = Object.values(plan.tasks)
     .filter((p) => p.status !== 'done' && p.projectedFinish)
     .reduce((m, p) => Math.max(m, p.projectedFinish!), 0);

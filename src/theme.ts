@@ -89,6 +89,8 @@ export function statusInfo(status: RiskStatus, t: Theme): { label: string; color
       return { label: 'Tight', color: t.warn };
     case 'late':
       return { label: 'At risk', color: t.danger };
+    case 'overdue':
+      return { label: 'Deadline passed', color: t.danger };
     case 'unscheduled':
       return { label: "Doesn't fit", color: t.danger };
     default:
