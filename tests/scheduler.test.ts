@@ -276,4 +276,30 @@ test('the same event in several calendars is shown once', () => {
   assert.equal(r2.busy.length, 2);
 });
 
+test('a task whose deadline has passed is no longer planned, and does not push others back', () => {
+  // The screenshot case: exams on the 11th and 14th still showing up on the 15th, ahead of the 17th.
+  const sun = at('2026-11-15T08:34:00');
+  const snacs = task({ title: 'snacs exam on 11th', deadline: at('2026-11-11T09:00:00'), estimateMin: 60 });
+  const adm = task({ title: 'adv data mining exam on 14th', deadline: at('2026-11-14T09:00:00'), estimateMin: 60 });
+  const idl = task({ title: 'idl exam on 17th', deadline: at('2026-11-17T09:00:00'), estimateMin: 60 });
+  const plan = buildPlan({ tasks: [snacs, adm, idl], projects: [], busy: [], settings, timer: null, now: sun });
+  assert.equal(plan.tasks[snacs.id].status, 'overdue');
+  assert.equal(plan.tasks[adm.id].status, 'overdue');
+  assert.equal(plan.tasks[snacs.id].blocks.length, 0);
+  assert.ok(plan.blocks.every((b) => b.taskId === idl.id));
+  assert.equal(plan.blocks[0].start, at('2026-11-15T09:00:00')); // idl gets the first free slot
+});
+
+test('Calendar gets only deadlines unless work blocks are switched on', () => {
+  const sun = at('2026-11-15T08:34:00');
+  const past = task({ title: 'snacs exam on 11th', deadline: at('2026-11-11T09:00:00') });
+  const idl = task({ title: 'idl exam on 17th', deadline: at('2026-11-17T09:00:00') });
+  const plan = buildPlan({ tasks: [past, idl], projects: [], busy: [], settings, timer: null, now: sun });
+  const only = buildSyncEvents(plan, [past, idl], [], sun, false);
+  assert.deepEqual(only, [{ t: '⚑ Due: idl exam on 17th', s: '2026-11-17 08:45', e: '2026-11-17 09:00' }]);
+  const all = buildSyncEvents(plan, [past, idl], [], sun, true);
+  assert.ok(all.some((e) => e.t === '▶ idl exam on 17th'));
+  assert.ok(!all.some((e) => e.t.includes('snacs')));
+});
+
 console.log(`${passed} tests passed (incl. bridge)`);

@@ -157,6 +157,11 @@ export function buildPlan({ tasks, projects, busy, settings, timer, now }: PlanI
     const project = projectById.get(task.projectId ?? '');
     const deadline = effectiveDeadline(task, project);
     const remaining = remainingMin(task, timer, now);
+    if (deadline !== undefined && deadline <= now) {
+      // Deadline passed: planning it every day helps nobody. It waits for "done" or a new deadline.
+      taskPlans[task.id] = { taskId: task.id, remainingMin: remaining, blocks: [], deadline, unscheduledMin: remaining, status: 'overdue' };
+      continue;
+    }
     let rem = remaining;
     const blocks: WorkBlock[] = [];
 
@@ -239,7 +244,7 @@ export function buildPlan({ tasks, projects, busy, settings, timer, now }: PlanI
 
     let status: RiskStatus;
     if (pts.length > 0 && openPts.length === 0) status = 'done';
-    else if (plans.some((p) => p.status === 'late')) status = 'late';
+    else if (plans.some((p) => p.status === 'late' || p.status === 'overdue')) status = 'late';
     else if (anyUnscheduled) status = 'unscheduled';
     else if (project.deadline !== undefined && projectedFinish !== undefined)
       status = deadlineStatus(projectedFinish, project.deadline, now);

@@ -232,7 +232,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const doSync = useCallback(async (force: boolean) => {
     const { settings: s, permission: perm, plan: p, tasks: ts, projects: ps, sync: sy } = ref.current;
     if (IS_WEB || perm !== 'granted' || !s.writeToCalendar || syncingRef.current) return;
-    const sig = planSignature(p, ts) + ':' + s.alertMin;
+    const sig = planSignature(p, ts) + ':' + s.alertMin + ':' + s.calendarBlocks;
     if (!force && sig === sy.lastSyncHash) return;
     syncingRef.current = true;
     setSyncing(true);
@@ -250,9 +250,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /** Web: hand the plan to the Paced Sync shortcut; it writes the calendar and opens Paced again with your events. */
   const startShortcutSync = useCallback((auto: boolean) => {
-    const { plan: p, tasks: ts, projects: ps, busy: b } = ref.current;
+    const { plan: p, tasks: ts, projects: ps, busy: b, settings: st } = ref.current;
     const t = Date.now();
-    const events = buildSyncEvents(p, ts, ps, t);
+    const events = buildSyncEvents(p, ts, ps, t, st.calendarBlocks);
     setSync((x) => ({
       ...x,
       lastSyncAt: t,

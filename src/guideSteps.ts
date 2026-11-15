@@ -11,7 +11,7 @@ export const GUIDE: GuideSection[] = [
   {
     title: 'Before you start',
     steps: [
-      'Open the Calendar app → Calendars → Add Calendar → name it exactly "Paced" (put it in iCloud). Your work blocks and deadlines will live there.',
+      'Open the Calendar app → Calendars → Add Calendar → name it exactly "Paced" (put it in iCloud). Your deadlines will live there.',
       `Open the Shortcuts app → tap + → tap the name at the top → Rename → "${SHORTCUT_NAME}" (exact spelling and capitals).`,
       'To add each action below, tap the search bar at the bottom, type the action name and tap it. To insert a variable (like Shortcut Input or Repeat Item), tap the field and pick it from the bar above the keyboard.',
     ],
@@ -61,7 +61,7 @@ export const GUIDE: GuideSection[] = [
     title: 'Try it',
     steps: [
       'Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.',
-      'Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.',
+      'Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.',
       'If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.',
       'Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don\'t pile up.',
     ],

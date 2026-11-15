@@ -40,6 +40,8 @@ export interface Settings {
   busyCalendarIds: string[] | null; // null = every calendar except Paced's own
   ignoreAllDay: boolean; // all-day events (birthdays, holidays) don't block time
   writeToCalendar: boolean;
+  /** Also put the planned work blocks in Calendar (off: only each deadline, on its day). */
+  calendarBlocks: boolean;
   alertMin: number; // alert before each work block
   appCalendarId?: string;
   shortcutReady?: boolean; // web: the Paced Sync shortcut has delivered events at least once
@@ -71,7 +73,8 @@ export interface WorkBlock {
   end: number;
 }
 
-export type RiskStatus = 'done' | 'ok' | 'tight' | 'late' | 'unscheduled' | 'no-deadline';
+/** overdue: the deadline has passed and the task isn't done. Paced stops planning it until you finish it or move the deadline. */
+export type RiskStatus = 'done' | 'ok' | 'tight' | 'late' | 'overdue' | 'unscheduled' | 'no-deadline';
 
 export interface TaskPlan {
   taskId: string;
@@ -119,6 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   busyCalendarIds: null,
   ignoreAllDay: true,
   writeToCalendar: true,
+  calendarBlocks: false,
   alertMin: 5,
   autoWrite: false,
   accent: 'indigo',

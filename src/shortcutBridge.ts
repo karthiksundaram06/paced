@@ -83,11 +83,11 @@ export interface SyncEvent {
   e: string;
 }
 
-export function buildSyncEvents(plan: Plan, tasks: Task[], projects: Project[], now: number): SyncEvent[] {
+export function buildSyncEvents(plan: Plan, tasks: Task[], projects: Project[], now: number, includeBlocks = true): SyncEvent[] {
   const until = now + SYNC_DAYS * 24 * 60 * MIN;
   const taskById = new Map(tasks.map((t) => [t.id, t]));
   const events: SyncEvent[] = [];
-  for (const b of plan.blocks) {
+  for (const b of includeBlocks ? plan.blocks : []) {
     if (b.start > until) break;
     const t = taskById.get(b.taskId);
     if (t) events.push({ t: `▶ ${t.title}`, s: shortcutDate(b.start), e: shortcutDate(b.end) });

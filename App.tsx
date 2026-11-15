@@ -49,7 +49,7 @@ function Main() {
   const newTask = (projectId?: string) => setTaskEditor({ task: null, projectId });
   const openProject = (project: Project) => setProjectEditor({ project });
 
-  const atRisk = tasks.filter((x) => !x.done && ['late', 'unscheduled'].includes(plan.tasks[x.id]?.status)).length;
+  const atRisk = tasks.filter((x) => !x.done && ['late', 'overdue', 'unscheduled'].includes(plan.tasks[x.id]?.status)).length;
   // Keep the editor showing the latest version of the task (e.g. tracked time while the timer runs).
   const editingTask = taskEditor?.task ? tasks.find((x) => x.id === taskEditor.task!.id) ?? null : null;
 

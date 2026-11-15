@@ -13,7 +13,7 @@ You add a task and say roughly how long it takes. Paced then tells you:
 - **Lock Screen countdown**: a live countdown to your next deadline as a Lock Screen or Home Screen widget, through the free Scriptable app (Settings → Lock Screen countdown → Copy widget script). It reads the deadlines in the "Paced" calendar.
 - **iPhone gestures**: pull Today down to sync your calendar; swipe a task or project editor down to close it (it asks first if you changed something).
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
-- **Calendar**: your events are read every time you open Paced from its icon, and with one tap work blocks and deadlines go into a **"Paced"** calendar with alerts.
+- **Calendar**: your events are read every time you open Paced from its icon, and with one tap your deadlines go into a **"Paced"** calendar with alerts, each on its own day. The study and work blocks Paced plans stay in the app unless you turn on *Work blocks in Calendar*. Tasks whose deadline has passed stop being planned until you mark them done or move the deadline.
 
 No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your iPhone (in Safari's storage for this site). Use **Settings → Back up tasks** now and then.
 
@@ -24,13 +24,13 @@ No App Store, no Expo Go, no laptop, no fees. Your tasks are stored only on your
 Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You build one shortcut called **Paced Sync** and put it on your Home Screen as the Paced icon:
 
 - **Tap the icon:** it reads your next 4 weeks of events in the background and opens Paced with them already loaded.
-- **Tap Sync now** (or pull Today down and let go) when you want your work blocks and deadlines in the "Paced" calendar (iPhone asks "Open in Shortcuts?" → Open, and you come straight back). Paced never opens Shortcuts by itself unless you switch on *Update Calendar automatically*.
+- **Tap Sync now** (or pull Today down and let go) when you want your latest deadlines in the "Paced" calendar (iPhone asks "Open in Shortcuts?" → Open, and you come straight back). Paced never opens Shortcuts by itself unless you switch on *Update Calendar automatically*.
 
 The same steps are inside the app (Settings → Shortcut setup guide).
 
 ### Before you start
 
-1. Open the Calendar app → Calendars → Add Calendar → name it exactly "Paced" (put it in iCloud). Your work blocks and deadlines will live there.
+1. Open the Calendar app → Calendars → Add Calendar → name it exactly "Paced" (put it in iCloud). Your deadlines will live there.
 2. Open the Shortcuts app → tap + → tap the name at the top → Rename → "Paced Sync" (exact spelling and capitals).
 3. To add each action below, tap the search bar at the bottom, type the action name and tap it. To insert a variable (like Shortcut Input or Repeat Item), tap the field and pick it from the bar above the keyboard.
 
@@ -72,7 +72,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 ### Try it
 
 27. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
-28. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your work blocks and deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
+28. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
 29. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
 30. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 

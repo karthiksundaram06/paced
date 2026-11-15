@@ -12,11 +12,11 @@ import { CountdownPill } from './Countdown';
 export function deadlineLine(task: Task, tp: TaskPlan | undefined, now: number): { text: string; tone: 'normal' | 'warn' | 'danger' } {
   if (!tp) return { text: '', tone: 'normal' };
   if (task.done) return { text: task.doneAt ? `Finished ${when(task.doneAt, now)}` : 'Finished', tone: 'normal' };
+  if (tp.deadline !== undefined && tp.deadline <= now) {
+    return { text: `Deadline passed (${when(tp.deadline, now)}). Mark it done, or set a new deadline.`, tone: 'danger' };
+  }
   if (tp.remainingMin === 0) {
     return { text: 'Estimate used up. Mark it done, or add time in the task.', tone: 'warn' };
-  }
-  if (tp.deadline !== undefined && tp.deadline < now) {
-    return { text: `Overdue: was due ${when(tp.deadline, now)}`, tone: 'danger' };
   }
   if (tp.unscheduledMin > 0) {
     const short = `${duration(tp.unscheduledMin)} doesn't fit in your free time`;
