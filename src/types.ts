@@ -6,6 +6,7 @@ export interface Project {
   color: string;
   deadline?: number; // epoch ms
   createdAt: number;
+  updatedAt?: number; // last change on any device (for iCloud Drive sync)
 }
 
 export interface Task {
@@ -21,6 +22,7 @@ export interface Task {
   notes?: string;
   createdAt: number;
   deletedAt?: number; // in Deleted (Tasks tab) until restored or 30 days pass
+  updatedAt?: number; // last change on any device (for iCloud Drive sync)
 }
 
 export interface RunningTimer {
@@ -60,6 +62,8 @@ export interface SyncState {
   pendingPaste?: boolean; // web: the shortcut was opened and its result hasn't come back yet
   lastAutoAt?: number; // web: last automatic hand-off to Shortcuts (loop guard)
   writtenBusyKey?: string; // web: calendar events the last written plan was based on
+  backupAt?: number; // web: when the newest iCloud Drive backup seen so far was saved
+  backupReadAt?: number; // web: when a backup last came back from the shortcut
 }
 
 export interface BusyInterval {

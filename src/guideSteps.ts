@@ -1,3 +1,4 @@
+import { BACKUP_FILE } from './backup';
 import { BUSY_HEADER, PACED_URL, RETURN_PREFIX, SHORTCUT_NAME } from './shortcutBridge';
 
 export interface GuideSection {
@@ -38,7 +39,7 @@ export const GUIDE: GuideSection[] = [
     title: 'Part 2: read your events and open Paced',
     note: 'These go at the very bottom, after "End If". (Built an older version with Copy to Clipboard? Delete Copy to Clipboard and Show Notification, then do the last two steps here.)',
     steps: [
-      'Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.',
+      'Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off. (Paced ignores its own events when planning.)',
       'Add "Repeat with Each" for those Calendar Events.',
       'Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.',
       'After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.',
@@ -55,6 +56,18 @@ export const GUIDE: GuideSection[] = [
       `Save the icon: open ${PACED_URL}icon-512.png in Safari → long-press the image → Save to Photos.`,
       'In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.',
       'If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.',
+    ],
+  },
+  {
+    title: 'Part 4: back up your tasks to iCloud Drive',
+    note: 'So clearing Safari never loses your tasks, and your iPad gets them too. Do this once on your iPhone: the shortcut updates itself on your iPad.',
+    steps: [
+      `Add "Get File" and drag it to the very top, above "If". Leave the folder as Shortcuts and type the path ${BACKUP_FILE}. Tap the arrow (Show More) and turn off "Error If Not Found".`,
+      'Add "Get Dictionary Value" and drag it inside the If, just above "Otherwise". Set it to Get Value for key data in Dictionary (tap the last field and pick the Dictionary from "Get Dictionary from Input").',
+      `Right under it, add "Save File" (it saves the Dictionary Value). Tap the arrow, turn off "Ask Where to Save", type the path ${BACKUP_FILE}, and turn on "Overwrite If File Exists".`,
+      'In Part 2\'s "Find Calendar Events", delete the filter "Calendar is not Paced" if it\'s there. Paced still ignores its own events, but this lets it rebuild your tasks from your deadlines if they are ever lost.',
+      `Tap the Text that starts with ${BUSY_HEADER}. Put the cursor right before ${BUSY_HEADER}, insert the File variable (from Get File), then press return so ${BUSY_HEADER} starts its own line.`,
+      'Check it: in Paced, pull Today down to sync (allow Shortcuts to use files: Always Allow), then do it once more. Settings → Data now says "Backed up to iCloud Drive".',
     ],
   },
   {

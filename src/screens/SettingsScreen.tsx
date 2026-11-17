@@ -8,7 +8,7 @@ import { Screen } from '../components/Screen';
 import { confirmAction, notify } from '../confirm';
 import { SHORTCUT_NAME } from '../shortcutBridge';
 import { pickBackupFile, saveBackup } from '../webFiles';
-import { WEEKDAY_SHORT, duration } from '../format';
+import { WEEKDAY_SHORT, duration, relative } from '../format';
 import { startOfDay } from '../scheduler';
 import { IS_WEB, useStore } from '../store';
 import { ACCENTS, useTheme } from '../theme';
@@ -279,9 +279,19 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
       <Card style={{ gap: 10 }}>
         {IS_WEB && (
           <>
-            <Muted style={{ fontSize: 12 }}>
-              Your tasks live in this app on this iPhone only. Save a backup now and then, so they survive a phone switch or a cleared browser.
-            </Muted>
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <Icon name={s.sync.backupAt ? 'cloud-done-outline' : 'cloud-offline-outline'} size={22} color={s.sync.backupAt ? t.ok : t.sub} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: t.text, fontSize: 16 }}>{s.sync.backupAt ? 'Backed up to iCloud Drive' : 'iCloud Drive backup is off'}</Text>
+                <Muted style={{ fontSize: 12 }}>
+                  {s.sync.backupAt
+                    ? `Last saved ${relative(s.sync.backupAt, s.now)}. Saved each time you sync, and loaded on your other devices when you open Paced from its icon. Clearing Safari doesn't touch it.`
+                    : 'Clearing Safari history erases your tasks unless they are backed up. Add the backup steps to your Paced Sync shortcut (Shortcut setup guide, Part 4), then sync once.'}
+                </Muted>
+              </View>
+            </View>
+            <Divider />
+            <Muted style={{ fontSize: 12 }}>Or keep a backup file yourself:</Muted>
             <Button
               title="Back up tasks"
               kind="secondary"

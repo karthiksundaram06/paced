@@ -1,3 +1,4 @@
+import { decodeSnapshot, encodeSnapshot, makeSnapshot, mergeSnapshot, stampChanges, tasksFromDeadlines, type CalendarDeadline } from './backup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -31,6 +32,8 @@ interface Persisted {
   busyUpdatedAt?: number;
   dataChangedAt?: number;
   paused?: string | null;
+  tombstones?: Record<string, number>;
+  settingsAt?: number;
 }
 
 export interface Store {
@@ -81,6 +84,10 @@ export interface Store {
   syncNow: () => Promise<void>;
   removeCalendar: () => Promise<void>;
   resetAll: () => Promise<void>;
+  /** Paced is empty but the Paced calendar still has deadlines: offer to bring them back. */
+  restorable: CalendarDeadline[] | null;
+  restoreFromCalendar: () => void;
+  dismissRestore: () => void;
 
   /** Web: load events copied by the Paced Sync shortcut. Returns a message for the user. */
   importBusyText: (text: string) => { ok: boolean; message: string };
@@ -120,6 +127,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [syncTrigger, setSyncTrigger] = useState(0);
+  const [tombstones, setTombstones] = useState<Record<string, number>>({});
+  const [settingsAt, setSettingsAt] = useState<number | undefined>();
+  const [restorable, setRestorable] = useState<CalendarDeadline[] | null>(null);
+  // Local edits go through these, so each changed task/project carries the time of its last change.
+  const setTasksS = (fn: (xs: Task[]) => Task[]) => setTasks((prev) => stampChanges(prev, fn(prev), Date.now()));
+  const setProjectsS = (fn: (xs: Project[]) => Project[]) => setProjects((prev) => stampChanges(prev, fn(prev), Date.now()));
+  const bury = (ids: string[]) => {
+    if (!ids.length) return;
+    const at = Date.now();
+    setTombstones((t) => ({ ...t, ...Object.fromEntries(ids.map((id) => [id, at])) }));
+  };
   const bump = () => {
     setSyncTrigger((n) => n + 1);
     setDataChangedAt(Date.now());
@@ -142,15 +160,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBusyUpdatedAt(data.busyUpdatedAt);
     setDataChangedAt(data.dataChangedAt);
     setPaused(data.paused ?? null);
+    setTombstones(data.tombstones ?? {});
+    setSettingsAt(data.settingsAt);
   }, []);
 
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) hydrate(raw);
+        if (raw) {
+          try {
+            hydrate(raw);
+          } catch {
+            // Unreadable: keep a copy instead of overwriting it with an empty Paced.
+            await AsyncStorage.setItem(`${STORAGE_KEY}:unreadable-${Date.now()}`, raw).catch(() => {});
+          }
+        }
       } catch {
-        // corrupt storage: start fresh
+        // storage unavailable: start fresh
       }
       if (!IS_WEB) {
         try {
@@ -166,14 +193,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     const h = setTimeout(() => {
-      const data: Persisted = { tasks: allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused };
+      const data: Persisted = { tasks: allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused, tombstones, settingsAt };
       const json = JSON.stringify(data);
       if (json === lastSavedRef.current) return;
       lastSavedRef.current = json;
       AsyncStorage.setItem(STORAGE_KEY, json).catch(() => {});
     }, 300);
     return () => clearTimeout(h);
-  }, [loaded, allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused]);
+  }, [loaded, allTasks, projects, settings, timer, sync, busy, busyUpdatedAt, dataChangedAt, paused, tombstones, settingsAt]);
 
   /* ---- clock ---- */
   useEffect(() => {
@@ -189,8 +216,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   /* ---- latest-state refs for async work ---- */
-  const ref = useRef({ tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt });
-  ref.current = { tasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt };
+  const ref = useRef({ tasks, allTasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt, tombstones, settingsAt });
+  ref.current = { tasks, allTasks, projects, settings, plan, permission, sync, timer, busy, dataChangedAt, tombstones, settingsAt };
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [uiBusy, setUiBusy] = useState(false);
   const uiBusyRef = useRef(false);
@@ -250,12 +277,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /** Web: hand the plan to the Paced Sync shortcut; it writes the calendar and opens Paced again with your events. */
   const startShortcutSync = useCallback((auto: boolean) => {
-    const { plan: p, tasks: ts, projects: ps, busy: b, settings: st, sync: sy } = ref.current;
+    const { plan: p, tasks: ts, allTasks: all, projects: ps, busy: b, settings: st, sync: sy, tombstones: tb, settingsAt: sa } = ref.current;
     const t = Date.now();
     const events = buildSyncEvents(p, ts, ps, t, st.calendarBlocks);
-    // A device that has never written and has nothing to write (a new iPad, say) only reads.
-    // Writing would clear the "Paced" calendar, which iCloud shares with your other devices.
-    const readOnly = events.length === 0 && !(sy.lastWritten && sy.lastWritten > 0);
+    // A device with nothing in it that has never written (a new iPad, or Safari just cleared) only reads:
+    // writing would clear the shared "Paced" calendar and replace the iCloud Drive backup with an empty one.
+    const readOnly = events.length === 0 && all.length === 0 && ps.length === 0 && !(sy.lastWritten && sy.lastWritten > 0);
+    const data = encodeSnapshot(makeSnapshot({ tasks: all, projects: ps, settings: st, settingsAt: sa, tombstones: tb }, t));
     setSync((x) => ({
       ...x,
       lastSyncAt: t,
@@ -267,7 +295,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
     // Give storage a moment to save before iOS switches to the Shortcuts app.
     setTimeout(() => {
-      window.location.href = shortcutUrl(readOnly ? null : events, `${window.location.origin}${window.location.pathname}`);
+      window.location.href = shortcutUrl(readOnly ? null : events, `${window.location.origin}${window.location.pathname}`, data);
     }, 400);
   }, []);
 
@@ -319,7 +347,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [refreshBusy]);
 
+  /** Folds the iCloud Drive backup into this device. Returns how many tasks it brought in. */
+  const applyBackup = (text: string): { found: boolean; tasks: number; projects: number; added: number } => {
+    const snap = decodeSnapshot(text);
+    if (!snap) return { found: false, tasks: ref.current.tasks.length, projects: ref.current.projects.length, added: 0 };
+    const cur = ref.current;
+    const m = mergeSnapshot({ tasks: cur.allTasks, projects: cur.projects, settings: cur.settings, settingsAt: cur.settingsAt, tombstones: cur.tombstones }, snap);
+    const before = new Set(cur.allTasks.map((x) => x.id));
+    if (m.changed) {
+      setTasks(m.tasks);
+      setProjects(m.projects);
+      setSettings(m.settings);
+      setSettingsAt(m.settingsAt);
+    }
+    setTombstones(m.tombstones);
+    setSync((x) => ({ ...x, backupAt: Math.max(x.backupAt ?? 0, snap.at), backupReadAt: Date.now() }));
+    const live = m.tasks.filter((x) => !x.deletedAt);
+    return { found: true, tasks: live.length, projects: m.projects.length, added: live.filter((x) => !before.has(x.id)).length };
+  };
+
+  const restoreFromCalendar = () => {
+    const list = restorable;
+    if (!list?.length) return;
+    const r = tasksFromDeadlines(list, Date.now(), newId);
+    setTasksS((xs) => [...xs, ...r.tasks]);
+    setProjectsS((xs) => [...xs, ...r.projects]);
+    setRestorable(null);
+    bump();
+    const n = r.tasks.length + r.projects.length;
+    setNotice({ ok: true, text: `Brought back ${n} from your Paced calendar. Check their time estimates (set to 1 h).` });
+  };
+
   const importBusyText: Store['importBusyText'] = (text) => {
+    const backup = applyBackup(text);
     const parsed = parseBusyText(text);
     if (!parsed) {
       return { ok: false, message: "That isn't from the Paced Sync shortcut. Run Sync with Calendar first, then paste." };
@@ -336,12 +396,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBusy(kept);
     setBusyUpdatedAt(Date.now());
     setSettings((x) => ({ ...x, shortcutReady: true }));
+    setRestorable(backup.tasks === 0 && backup.projects === 0 && parsed.deadlines.length > 0 ? parsed.deadlines : null);
     setSync((x) => ({ ...x, pendingPaste: false, lastError: undefined }));
     setNow(Date.now());
     const extra =
       (parsed.skipped ? ` (${parsed.skipped} skipped: unreadable dates)` : '') +
       (allDay ? ` · ${allDay} all-day ignored` : '') +
-      (parsed.duplicates ? ` · ${parsed.duplicates} duplicates merged` : '');
+      (parsed.duplicates ? ` · ${parsed.duplicates} duplicates merged` : '') +
+      (backup.added ? ` · ${backup.added} task${backup.added === 1 ? '' : 's'} from iCloud Drive` : '');
     return { ok: true, message: `Loaded ${parsed.busy.length} calendar event${parsed.busy.length === 1 ? '' : 's'}${extra}.` };
   };
 
@@ -363,8 +425,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = JSON.parse(json);
       if (data?.app !== 'paced' || !Array.isArray(data.tasks)) return { ok: false, message: "That file isn't a Paced backup." };
-      setTasks(data.tasks);
-      setProjects(Array.isArray(data.projects) ? data.projects : []);
+      setTasksS(() => data.tasks);
+      setProjectsS(() => (Array.isArray(data.projects) ? data.projects : []));
       setSettings((x) => ({ ...DEFAULT_SETTINGS, ...data.settings, shortcutReady: x.shortcutReady }));
       setTimer(null);
       bump();
@@ -470,13 +532,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addTask: Store['addTask'] = (t) => {
     const id = newId();
-    setTasks((xs) => [...xs, { ...t, id, createdAt: Date.now(), loggedSec: 0, done: false }]);
+    setTasksS((xs) => [...xs, { ...t, id, createdAt: Date.now(), loggedSec: 0, done: false }]);
     bump();
     return id;
   };
 
   const updateTask: Store['updateTask'] = (id, patch) => {
-    setTasks((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    setTasksS((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     bump();
   };
 
@@ -486,22 +548,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const tm = ref.current.timer;
     if (tm?.taskId === id) setTimer(null);
     setPaused((p) => (p === id ? null : p));
-    setTasks((xs) => (tm?.taskId === id ? commitTimer(xs, tm, at) : xs).map((x) => (x.id === id ? { ...x, deletedAt: at } : x)));
+    setTasksS((xs) => (tm?.taskId === id ? commitTimer(xs, tm, at) : xs).map((x) => (x.id === id ? { ...x, deletedAt: at } : x)));
     bump();
   };
 
   const restoreTask: Store['restoreTask'] = (id) => {
-    setTasks((xs) => xs.map((x) => (x.id === id ? { ...x, deletedAt: undefined } : x)));
+    setTasksS((xs) => xs.map((x) => (x.id === id ? { ...x, deletedAt: undefined } : x)));
     bump();
   };
 
-  const purgeTask: Store['purgeTask'] = (id) => setTasks((xs) => xs.filter((x) => x.id !== id));
-  const emptyDeleted: Store['emptyDeleted'] = () => setTasks((xs) => xs.filter((x) => !x.deletedAt));
+  const purgeTask: Store['purgeTask'] = (id) => {
+    bury([id]);
+    setTasks((xs) => xs.filter((x) => x.id !== id));
+  };
+  const emptyDeleted: Store['emptyDeleted'] = () => {
+    bury(ref.current.allTasks.filter((x) => x.deletedAt).map((x) => x.id));
+    setTasks((xs) => xs.filter((x) => !x.deletedAt));
+  };
 
   const setDone: Store['setDone'] = (id, done) => {
     const at = Date.now();
     const tm = ref.current.timer;
-    setTasks((xs) =>
+    setTasksS((xs) =>
       (tm?.taskId === id ? commitTimer(xs, tm, at) : xs).map((x) =>
         x.id === id ? { ...x, done, doneAt: done ? at : undefined } : x
       )
@@ -513,27 +581,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addLogged: Store['addLogged'] = (id, deltaMin) => {
-    setTasks((xs) => xs.map((x) => (x.id === id ? { ...x, loggedSec: Math.max(0, x.loggedSec + deltaMin * 60) } : x)));
+    setTasksS((xs) => xs.map((x) => (x.id === id ? { ...x, loggedSec: Math.max(0, x.loggedSec + deltaMin * 60) } : x)));
     bump();
   };
 
   /* ---- projects ---- */
   const addProject: Store['addProject'] = (p) => {
     const id = newId();
-    setProjects((xs) => [...xs, { ...p, id, createdAt: Date.now() }]);
+    setProjectsS((xs) => [...xs, { ...p, id, createdAt: Date.now() }]);
     bump();
     return id;
   };
 
   const updateProject: Store['updateProject'] = (id, patch) => {
-    setProjects((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    setProjectsS((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     bump();
   };
 
   const deleteProject: Store['deleteProject'] = (id, deleteTasks) => {
+    bury([id]);
     setProjects((xs) => xs.filter((x) => x.id !== id));
     const at = Date.now();
-    setTasks((xs) =>
+    setTasksS((xs) =>
       xs.map((x) =>
         x.projectId !== id ? x : deleteTasks ? { ...x, projectId: undefined, deletedAt: x.deletedAt ?? at } : { ...x, projectId: undefined }
       )
@@ -550,7 +619,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const at = Date.now();
     const tm = ref.current.timer;
     if (tm?.taskId === taskId) return;
-    if (tm) setTasks((xs) => commitTimer(xs, tm, at));
+    if (tm) setTasksS((xs) => commitTimer(xs, tm, at));
     setTimer({ taskId, startedAt: at });
     setPaused(null);
     setNow(at);
@@ -561,7 +630,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const at = Date.now();
     const tm = ref.current.timer;
     if (!tm) return;
-    setTasks((xs) => commitTimer(xs, tm, at));
+    setTasksS((xs) => commitTimer(xs, tm, at));
     setTimer(null);
     setPaused(tm.taskId);
     setNow(at);
@@ -573,6 +642,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /* ---- settings ---- */
   const updateSettings: Store['updateSettings'] = (patch) => {
     setSettings((x) => ({ ...x, ...patch }));
+    if (Object.keys(patch).some((k) => !['shortcutReady', 'appCalendarId', 'autoWrite', 'busyCalendarIds'].includes(k))) setSettingsAt(Date.now());
     if ('busyCalendarIds' in patch || 'ignoreAllDay' in patch || 'horizonDays' in patch) {
       setTimeout(() => refreshBusy(), 50);
     }
@@ -582,6 +652,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetAll = async () => {
+    bury([...ref.current.allTasks.map((x) => x.id), ...ref.current.projects.map((x) => x.id)]);
     setTasks([]);
     setProjects([]);
     setTimer(null);
@@ -630,6 +701,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     syncNow,
     removeCalendar,
     resetAll,
+    restorable,
+    restoreFromCalendar,
+    dismissRestore: () => setRestorable(null),
     importBusyText,
     pasteCalendar,
     exportData,
