@@ -62,7 +62,7 @@ export const GUIDE: GuideSection[] = [
     title: 'Part 4: back up your tasks to iCloud Drive',
     note: 'So clearing Safari never loses your tasks, and your iPad gets them too. Do this once on your iPhone: the shortcut updates itself on your iPad.',
     steps: [
-      `Add "Get File" and drag it to the very top, above "If". Leave the folder as Shortcuts and type the path ${BACKUP_FILE}. Tap the arrow (Show More) and turn off "Error If Not Found".`,
+      `Add "Get File from Folder" and drag it to the very top, above "If". Set the folder to Shortcuts (iCloud Drive) and the path to ${BACKUP_FILE}. Tap the arrow (Show More) and turn off "Error If Not Found".`,
       'Add "Get Dictionary Value" and drag it inside the If, just above "Otherwise". Set it to Get Value for key data in Dictionary (tap the last field and pick the Dictionary from "Get Dictionary from Input").',
       `Right under it, add "Save File" (it saves the Dictionary Value). Tap the arrow, turn off "Ask Where to Save", type the path ${BACKUP_FILE}, and turn on "Overwrite If File Exists".`,
       'In Part 2\'s "Find Calendar Events", delete the filter "Calendar is not Paced" if it\'s there. Paced still ignores its own events, but this lets it rebuild your tasks from your deadlines if they are ever lost.',
