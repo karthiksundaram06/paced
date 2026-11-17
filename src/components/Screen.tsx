@@ -7,6 +7,8 @@ import { H1, Icon } from '../ui';
 
 const PULL_MAX = 110; // how far the page follows the finger
 const PULL_READY = 64; // pulled this far (after resistance) = sync on release
+/** iPad and wide windows: keep one readable column instead of stretching edge to edge. */
+export const MAX_WIDTH = 680;
 
 export function Screen({
   title,
@@ -73,7 +75,7 @@ export function Screen({
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 120 }}
       refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.sub} /> : undefined}
     >
-      <View ref={bodyRef} style={{ gap: 10 }}>
+      <View ref={bodyRef} style={{ gap: 10, width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}>
         {enabled && (
           <View
             pointerEvents="none"

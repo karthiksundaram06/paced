@@ -109,9 +109,10 @@ export function buildSyncEvents(plan: Plan, tasks: Task[], projects: Project[], 
  * Run the shortcut with the plan. On success the shortcut itself opens Paced again (its last action),
  * so only error/cancel callbacks are given here.
  */
-export function shortcutUrl(events: SyncEvent[], returnBase?: string): string {
-  const payload = JSON.stringify({ events });
-  const base = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(payload)}`;
+/** events null: run without input, so the shortcut only reads your events and leaves the "Paced" calendar alone. */
+export function shortcutUrl(events: SyncEvent[] | null, returnBase?: string): string {
+  const input = events ? `&input=text&text=${encodeURIComponent(JSON.stringify({ events }))}` : '';
+  const base = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}${input}`;
   if (!returnBase) return base;
   return `${base}&x-error=${encodeURIComponent(`${returnBase}#sync=error`)}&x-cancel=${encodeURIComponent(`${returnBase}#sync=cancel`)}`;
 }

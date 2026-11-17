@@ -235,7 +235,7 @@ export function Sheet({
       <View ref={sheetRef} style={{ flex: 1, backgroundColor: t.bg }}>
         <View ref={headerRef} style={{ backgroundColor: t.card, borderBottomColor: t.border, borderBottomWidth: StyleSheet.hairlineWidth }}>
           {IS_WEB_UI && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: t.faint, opacity: 0.5, marginTop: 6 }} />}
-          <View style={[styles.sheetHeader, IS_WEB_UI && { paddingTop: 8 }]}>
+          <View style={[styles.sheetHeader, IS_WEB_UI && { paddingTop: 8 }, { width: '100%', maxWidth: 712, alignSelf: 'center' }]}>
             <Pressable onPress={onClose} hitSlop={10}>
               <Text style={{ color: t.accent, fontSize: 17 }}>Cancel</Text>
             </Pressable>
@@ -262,7 +262,7 @@ export function Sheet({
         )}
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40, gap: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40, gap: 16, width: '100%', maxWidth: 680, alignSelf: 'center' }}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
         >

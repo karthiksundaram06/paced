@@ -11,6 +11,7 @@ You add a task and say roughly how long it takes. Paced then tells you:
 - **Deleted tasks** go to Tasks → Deleted for 30 days, so you can restore them.
 - **Appearance**: 8 accent colours and 4 fonts (Default, Notion/Inter, Serif, Mono).
 - **Lock Screen countdown**: a live countdown to your next deadline as a Lock Screen or Home Screen widget, through the free Scriptable app (Settings → Lock Screen countdown → Copy widget script). It reads the deadlines in the "Paced" calendar.
+- **iPad and other devices**: tasks are kept per device (in Safari), while the "Paced" calendar is shared through iCloud. A device that has never written to Calendar and has no deadlines only reads your events, so a new iPad can't clear the deadlines your iPhone put there. On wide screens the app stays one readable column.
 - **iPhone gestures**: pull Today down to sync your calendar; swipe a task or project editor down to close it (it asks first if you changed something).
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
 - **Calendar**: your events are read every time you open Paced from its icon, and with one tap your deadlines go into a **"Paced"** calendar with alerts, each on its own day. The study and work blocks Paced plans stay in the app unless you turn on *Work blocks in Calendar*. Tasks whose deadline has passed stop being planned until you mark them done or move the deadline.
