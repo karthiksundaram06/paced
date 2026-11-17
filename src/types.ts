@@ -33,6 +33,8 @@ export interface Settings {
   dayEndMin: number; // minutes after midnight when you stop
   workDays: number[]; // 0 = Sunday … 6 = Saturday
   minChunkMin: number; // don't schedule blocks shorter than this
+  /** Split each task's work evenly over the days before its deadline, instead of as early as possible. */
+  spreadWork: boolean;
   maxChunkMin: number; // split work into blocks of at most this
   breakMin: number; // gap after each block
   bufferPct: number; // safety margin added to suggested deadlines
@@ -115,6 +117,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dayEndMin: 22 * 60,
   workDays: [0, 1, 2, 3, 4, 5, 6],
   minChunkMin: 25,
+  spreadWork: true,
   maxChunkMin: 90,
   breakMin: 10,
   bufferPct: 20,

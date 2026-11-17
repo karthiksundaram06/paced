@@ -16,7 +16,7 @@ function test(name: string, fn: () => void) {
 }
 
 const at = (d: string) => new Date(d).getTime(); // local time (TZ env)
-const settings: Settings = { ...DEFAULT_SETTINGS, horizonDays: 7 };
+const settings: Settings = { ...DEFAULT_SETTINGS, horizonDays: 7, spreadWork: false }; // most tests check as-early-as-possible planning
 let idc = 0;
 const task = (over: Partial<Task>): Task => ({
   id: `t${++idc}`,
@@ -307,6 +307,76 @@ test('a read-only sync sends no input, so the shortcut skips clearing the Paced 
   assert.ok(!url.includes('input=') && !url.includes('&text='));
   assert.ok(url.includes('x-cancel='));
   assert.ok(shortcutUrl([], 'https://x.github.io/paced/').includes('&text='));
+});
+
+/* ---------- spreading work over the days before a deadline ---------- */
+const spreadSettings: Settings = { ...settings, spreadWork: true };
+const dayOf = (ms: number) => new Date(ms).toDateString();
+const minutes = (b: { start: number; end: number }) => (b.end - b.start) / MIN;
+
+test('spread: 3 h due in 6 days becomes 30 min on each day, ending the day before', () => {
+  const t = task({ estimateMin: 180, deadline: at('2026-11-10T09:00:00') }); // Tue 09:00, now Wed 10:02
+  const plan = buildPlan({ tasks: [t], projects: [], busy: [], settings: spreadSettings, timer: null, now });
+  const tp = plan.tasks[t.id];
+  assert.equal(tp.unscheduledMin, 0);
+  assert.equal(tp.blocks.length, 6);
+  assert.ok(tp.blocks.every((b) => minutes(b) === 30));
+  assert.equal(new Set(tp.blocks.map((b) => dayOf(b.start))).size, 6);
+  assert.equal(dayOf(tp.blocks[5].start), dayOf(at('2026-11-09T12:00:00'))); // Monday
+  assert.equal(tp.status, 'ok'); // not "tight" just because it ends near the deadline
+});
+
+test('spread: the exam on the 17th gets an hour on each day before it', () => {
+  const sun = at('2026-11-15T08:34:00');
+  const idl = task({ title: 'idl exam on 17th', estimateMin: 120, deadline: at('2026-11-17T09:00:00') });
+  const plan = buildPlan({ tasks: [idl], projects: [], busy: [], settings: spreadSettings, timer: null, now: sun });
+  const bl = plan.tasks[idl.id].blocks;
+  assert.deepEqual(bl.map((b) => [dayOf(b.start), minutes(b)]), [
+    [dayOf(sun), 60],
+    [dayOf(at('2026-11-16T12:00:00')), 60],
+  ]);
+});
+
+test('spread: small tasks use fewer days, spaced out, never below the shortest block', () => {
+  const t = task({ estimateMin: 60, deadline: at('2026-11-11T09:00:00') }); // 7 days with free time
+  const plan = buildPlan({ tasks: [t], projects: [], busy: [], settings: spreadSettings, timer: null, now });
+  const bl = plan.tasks[t.id].blocks;
+  assert.deepEqual(bl.map(minutes), [30, 30]);
+  assert.equal(dayOf(bl[1].start), dayOf(at('2026-11-10T12:00:00'))); // the last day before the deadline
+  assert.notEqual(dayOf(bl[0].start), dayOf(now)); // not crammed into today
+});
+
+test('spread: a fully booked day is skipped, and two tasks never overlap', () => {
+  const busy = [{ start: at('2026-11-05T00:00:00'), end: at('2026-11-06T00:00:00') }]; // Thursday full
+  const a = task({ estimateMin: 120, deadline: at('2026-11-08T09:00:00') });
+  const b = task({ estimateMin: 200, deadline: at('2026-11-09T09:00:00') });
+  const plan = buildPlan({ tasks: [a, b], projects: [], busy, settings: spreadSettings, timer: null, now });
+  assert.equal(plan.tasks[a.id].unscheduledMin, 0);
+  assert.equal(plan.tasks[b.id].unscheduledMin, 0);
+  assert.ok(plan.blocks.every((x) => dayOf(x.start) !== dayOf(at('2026-11-05T12:00:00'))));
+  const sorted = [...plan.blocks].sort((x, y) => x.start - y.start);
+  for (let i = 1; i < sorted.length; i++) assert.ok(sorted[i].start >= sorted[i - 1].end, 'no overlap');
+  assert.ok(plan.blocks.every((x) => minutes(x) >= spreadSettings.minChunkMin));
+});
+
+test('spread: a task due later today still goes today', () => {
+  const t = task({ estimateMin: 90, deadline: at('2026-11-04T18:00:00') });
+  const plan = buildPlan({ tasks: [t], projects: [], busy: [], settings: spreadSettings, timer: null, now });
+  assert.equal(plan.tasks[t.id].blocks[0].start, at('2026-11-04T10:05:00'));
+  assert.equal(plan.tasks[t.id].unscheduledMin, 0);
+});
+
+test('spread: if the days are too full for an even split, the rest still gets planned before the deadline', () => {
+  // Only 30 min free on each of Wed–Fri before a Sat deadline; 90 min of work.
+  const busy = [
+    { start: at('2026-11-04T10:00:00'), end: at('2026-11-04T21:30:00') },
+    { start: at('2026-11-05T09:00:00'), end: at('2026-11-05T21:30:00') },
+    { start: at('2026-11-06T09:00:00'), end: at('2026-11-06T21:30:00') },
+  ];
+  const t = task({ estimateMin: 90, deadline: at('2026-11-07T08:00:00') });
+  const plan = buildPlan({ tasks: [t], projects: [], busy, settings: spreadSettings, timer: null, now });
+  assert.equal(plan.tasks[t.id].unscheduledMin, 0);
+  assert.notEqual(plan.tasks[t.id].status, 'late');
 });
 
 console.log(`${passed} tests passed (incl. bridge)`);

@@ -240,6 +240,12 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
 
       <SectionTitle>Work blocks</SectionTitle>
       <Card style={{ gap: 14 }}>
+        {row(
+          'Spread work out',
+          'On: each task is split evenly over the days before its deadline (3 h of exam prep due in 6 days becomes 30 min a day). Off: Paced plans it as early as possible.',
+          <Switch value={settings.spreadWork} onValueChange={(v) => updateSettings({ spreadWork: v })} trackColor={{ true: t.accent }} />
+        )}
+        <Divider />
         <View>
           <Text style={{ color: t.text, fontSize: 16 }}>Longest block</Text>
           <Muted style={{ fontSize: 12 }}>Bigger tasks get split into blocks of at most this</Muted>
@@ -324,7 +330,7 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
       <SectionTitle>How Paced plans</SectionTitle>
       <Card>
         <Muted style={{ lineHeight: 20 }}>
-          Paced takes your free time (working hours minus calendar events) and fills it with your tasks, earliest deadline first, using
+          Paced takes your free time (working hours minus calendar events) and fills it with your tasks, earliest deadline first (spread evenly over the days before each deadline, if that's on), using
           the time each task has left: your estimate minus what the timer has tracked. That gives every task a finish time. Tasks with a
           deadline show whether they'll make it and the latest time you can start. Tasks without one get a suggested deadline: the
           finish time plus a safety margin. Whenever your calendar or tasks change, the plan reshuffles and your "Paced" calendar is

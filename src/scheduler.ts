@@ -165,15 +165,17 @@ export function buildPlan({ tasks, projects, busy, settings, timer, now }: PlanI
     let rem = remaining;
     const blocks: WorkBlock[] = [];
 
-    for (const slot of slots) {
-      while (rem > 0) {
-        const len = Math.floor((slot.end - slot.start) / MIN);
-        if (len < Math.min(settings.minChunkMin, rem)) break;
-        const wanted = Math.min(rem, settings.maxChunkMin);
-        let chunk = Math.min(wanted, len);
-        // Avoid leaving a crumb smaller than the minimum block for later: shrink this block if it can
-        // stay above the minimum, otherwise keep the work together for the next free slot.
-        const tail = rem - chunk;
+    // Put up to `budget` minutes of this task into a free slot, never past `until`.
+    // Blocks follow the min/max size rules and leave no crumb smaller than the minimum.
+    const fill = (slot: { start: number; end: number }, budget = Infinity, until = Infinity): number => {
+      let placed = 0;
+      while (rem > 0 && placed < budget) {
+        const limit = Math.min(rem, budget - placed);
+        const len = Math.floor((Math.min(slot.end, until) - slot.start) / MIN);
+        if (limit < rem && limit < settings.minChunkMin) break; // today's share is used up
+        if (len < Math.min(settings.minChunkMin, limit)) break;
+        let chunk = Math.min(limit, settings.maxChunkMin, len);
+        const tail = limit - chunk;
         if (tail > 0 && tail < settings.minChunkMin) {
           if (chunk - (settings.minChunkMin - tail) >= settings.minChunkMin) chunk -= settings.minChunkMin - tail;
           else break;
@@ -181,14 +183,52 @@ export function buildPlan({ tasks, projects, busy, settings, timer, now }: PlanI
         blocks.push({ taskId: task.id, start: slot.start, end: slot.start + chunk * MIN });
         slot.start += (chunk + settings.breakMin) * MIN;
         rem -= chunk;
+        placed += chunk;
       }
-      if (rem <= 0) break;
+      return placed;
+    };
+
+    const spread = settings.spreadWork && deadline !== undefined && rem > 0;
+    if (spread) {
+      // Days with usable free time before the deadline.
+      const days: number[] = [];
+      const freeByDay = new Map<number, number>();
+      for (const sl of slots) {
+        if (sl.start >= deadline) continue;
+        const d = startOfDay(sl.start);
+        freeByDay.set(d, (freeByDay.get(d) ?? 0) + (Math.min(sl.end, deadline) - sl.start) / MIN);
+      }
+      for (const [d, m] of freeByDay) if (m >= Math.min(settings.minChunkMin, rem)) days.push(d);
+      days.sort((a, b) => a - b);
+      if (days.length > 1) {
+        // As many days as the work allows without blocks below the minimum, evenly spaced, ending the day before.
+        const k = Math.max(1, Math.min(days.length, Math.floor(rem / settings.minChunkMin)));
+        const share = Math.ceil(rem / k);
+        const chosen = new Set<number>();
+        for (let i = 0; i < k; i++) chosen.add(days[Math.max(0, Math.round(((i + 1) * days.length) / k) - 1)]);
+        for (const d of chosen) {
+          let budget = share;
+          for (const sl of slots) {
+            if (budget <= 0 || rem <= 0) break;
+            if (startOfDay(sl.start) !== d || sl.start >= deadline) continue;
+            budget -= fill(sl, budget, deadline);
+          }
+        }
+      }
     }
+    // Anything left (or every task, when spreading is off): as early as possible.
+    for (const slot of slots) {
+      if (rem <= 0) break;
+      fill(slot);
+    }
+    blocks.sort((a, b) => a.start - b.start);
 
     const projectedFinish = blocks.length ? blocks[blocks.length - 1].end : remaining === 0 ? now : undefined;
     let status: RiskStatus;
     if (rem > 0) status = deadline !== undefined ? 'late' : 'unscheduled';
-    else if (deadline !== undefined) status = deadlineStatus(projectedFinish ?? now, deadline, now);
+    else if (deadline !== undefined)
+      // Spread-out work ends near the deadline on purpose, so judge it by the room left, not the finish time.
+      status = spread ? ((projectedFinish ?? now) > deadline ? 'late' : 'ok') : deadlineStatus(projectedFinish ?? now, deadline, now);
     else status = 'no-deadline';
     const startBy = deadline !== undefined && remaining > 0 ? latestStart(free, deadline, remaining) : undefined;
     // Spare free time left before the deadline once this and everything more urgent is planned.
