@@ -79,7 +79,7 @@ export function CountdownBig({ to, style, label = true }: { to: number; style?: 
       {label && (
         <Text style={{ color: t.sub, fontSize: 12, fontWeight: '600' }}>{left > 0 ? 'Time left' : 'Overdue by'}</Text>
       )}
-      <Text style={[{ color, fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] }, style]}>{countdownText(left)}</Text>
+      <Text style={[{ color, fontSize: 22, fontWeight: '600', fontVariant: ['tabular-nums'] }, style]}>{countdownText(left)}</Text>
     </View>
   );
 }

@@ -138,7 +138,7 @@ export function TaskEditor({
         <View style={{ backgroundColor: t.card, borderRadius: 14, padding: 14, gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <RoundButton icon="remove" onPress={() => setEstimateMin((m) => Math.max(5, m - 15))} />
-            <Text style={{ color: t.text, fontSize: 28, fontWeight: '800', fontVariant: ['tabular-nums'] }}>{duration(estimateMin)}</Text>
+            <Text style={{ color: t.text, fontSize: 28, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{duration(estimateMin)}</Text>
             <RoundButton icon="add" onPress={() => setEstimateMin((m) => m + 15)} />
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
