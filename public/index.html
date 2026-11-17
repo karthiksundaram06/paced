@@ -75,8 +75,42 @@
     </script>
     <script>
       if ('serviceWorker' in navigator) {
+        // An open Paced tab keeps running the version it loaded, and Safari reuses that tab when the
+        // shortcut opens Paced. So look for a newer version whenever the tab is used again, and
+        // reload into it (never mid-typing: then it waits for the next time you come back).
+        var hadController = !!navigator.serviceWorker.controller;
+        var reloadPending = false;
+        var reloadNow = function () {
+          var a = document.activeElement;
+          if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) {
+            reloadPending = true;
+            return;
+          }
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!hadController) {
+            hadController = true; // first install, nothing to refresh
+            return;
+          }
+          reloadNow();
+        });
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('./sw.js').catch(function () {});
+          navigator.serviceWorker
+            .register('./sw.js')
+            .then(function (reg) {
+              var check = function () {
+                reg.update().catch(function () {});
+              };
+              document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                if (reloadPending) window.location.reload();
+                else check();
+              });
+              window.addEventListener('hashchange', check);
+              setInterval(check, 30 * 60 * 1000);
+            })
+            .catch(function () {});
         });
       }
     </script>
