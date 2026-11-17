@@ -213,7 +213,7 @@ test('busy text from the shortcut is parsed, own events and junk skipped', () =>
   assert.equal(r.busy[0].title, 'Advanced Data Mining | lecture');
   assert.equal(r.skipped, 1);
   assert.equal(parseBusyText('hello'), null);
-  assert.deepEqual(parseBusyText('PACED-BUSY\n'), { busy: [], skipped: 0, duplicates: 0 });
+  assert.deepEqual(parseBusyText('PACED-BUSY\n'), { busy: [], skipped: 0, duplicates: 0, deadlines: [] });
 });
 
 test('sync payload has blocks and deadlines in Shortcuts date format', () => {

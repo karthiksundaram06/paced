@@ -12,7 +12,7 @@ You add a task and say roughly how long it takes. Paced then tells you:
 - **Appearance**: 8 accent colours and 4 fonts (Default, Notion/Inter, Serif, Mono).
 - **Lock Screen countdown**: a live countdown to your next deadline as a Lock Screen or Home Screen widget, through the free Scriptable app (Settings → Lock Screen countdown → Copy widget script). It reads the deadlines in the "Paced" calendar.
 - **Spread work out** (Settings → Work blocks, on by default): each task's work is split evenly over the days before its deadline, e.g. 3 h of exam prep due in 6 days becomes 30 min a day, never in blocks below your shortest block. Off: as early as possible.
-- **iPad and other devices**: tasks are kept per device (in Safari), while the "Paced" calendar is shared through iCloud. A device that has never written to Calendar and has no deadlines only reads your events, so a new iPad can't clear the deadlines your iPhone put there. On wide screens the app stays one readable column.
+- **iCloud Drive backup and sync** (shortcut guide, Part 4): every sync also saves your tasks, projects and settings to iCloud Drive (Shortcuts/paced-backup.txt), and every run of the shortcut brings that file back. Clearing Safari no longer loses anything, and your iPad picks up your iPhone's tasks the next time you open Paced from its icon. Each device merges per task (newest change wins; tasks deleted for good stay deleted). If Paced is ever empty while your Paced calendar still has deadlines, Today offers to rebuild the tasks from them. A device with nothing in it never writes, so it can't clear the shared calendar or the backup. On wide screens the app stays one readable column.
 - **iPhone gestures**: pull Today down to sync your calendar; swipe a task or project editor down to close it (it asks first if you changed something).
 - **Projects**: group tasks, give the project a deadline, and see its total time to complete and finish date.
 - **Calendar**: your events are read every time you open Paced from its icon, and with one tap your deadlines go into a **"Paced"** calendar with alerts, each on its own day. The study and work blocks Paced plans stay in the app unless you turn on *Work blocks in Calendar*. Tasks whose deadline has passed stop being planned until you mark them done or move the deadline.
@@ -31,7 +31,6 @@ Websites can't read the iPhone Calendar, but Apple's **Shortcuts** app can. You 
 The same steps are inside the app (Settings → Shortcut setup guide).
 
 ### Before you start
-
 1. Open the Calendar app → Calendars → Add Calendar → name it exactly "Paced" (put it in iCloud). Your deadlines will live there.
 2. Open the Shortcuts app → tap + → tap the name at the top → Rename → "Paced Sync" (exact spelling and capitals).
 3. To add each action below, tap the search bar at the bottom, type the action name and tap it. To insert a variable (like Shortcut Input or Repeat Item), tap the field and pick it from the bar above the keyboard.
@@ -55,7 +54,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 ### Part 2: read your events and open Paced
 *These go at the very bottom, after "End If". (Built an older version with Copy to Clipboard? Delete Copy to Clipboard and Show Notification, then do the last two steps here.)*
 
-16. Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Calendar is not Paced · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off.
+16. Add "Find Calendar Events". Filters: Start Date is in the next 28 days · Is All Day is false. Sort by Start Date, Oldest First. Leave Limit off. (Paced ignores its own events when planning.)
 17. Add "Repeat with Each" for those Calendar Events.
 18. Inside, add "Text". Insert Repeat Item, tap it → Start Date → Date Format: ISO 8601, turn on Include ISO 8601 Time. Type |  then insert Repeat Item → End Date (same ISO 8601 format). Type |  then insert Repeat Item → Title.
 19. After "End Repeat", add "Combine Text": combine Repeat Results with New Lines.
@@ -71,12 +70,21 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 25. In the shortcut, tap its name at the top (or ⓘ) → Add to Home Screen. Name it Paced, tap the small icon → Choose Photo → pick the Paced icon → Add.
 26. If you added Paced to your Home Screen from Safari earlier, remove that icon (long-press → Remove App). From now on, open Paced only with the new icon.
 
-### Try it
+### Part 4: back up your tasks to iCloud Drive
+*So clearing Safari never loses your tasks, and your iPad gets them too. Do this once on your iPhone: the shortcut updates itself on your iPad.*
 
-27. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
-28. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
-29. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
-30. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
+27. Add "Get File" and drag it to the very top, above "If". Leave the folder as Shortcuts and type the path paced-backup.txt. Tap the arrow (Show More) and turn off "Error If Not Found".
+28. Add "Get Dictionary Value" and drag it inside the If, just above "Otherwise". Set it to Get Value for key data in Dictionary (tap the last field and pick the Dictionary from "Get Dictionary from Input").
+29. Right under it, add "Save File" (it saves the Dictionary Value). Tap the arrow, turn off "Ask Where to Save", type the path paced-backup.txt, and turn on "Overwrite If File Exists".
+30. In Part 2's "Find Calendar Events", delete the filter "Calendar is not Paced" if it's there. Paced still ignores its own events, but this lets it rebuild your tasks from your deadlines if they are ever lost.
+31. Tap the Text that starts with PACED-BUSY. Put the cursor right before PACED-BUSY, insert the File variable (from Get File), then press return so PACED-BUSY starts its own line.
+32. Check it: in Paced, pull Today down to sync (allow Shortcuts to use files: Always Allow), then do it once more. Settings → Data now says "Backed up to iCloud Drive".
+
+### Try it
+33. Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.
+34. Every time you open Paced with that icon, your events refresh in the background, with no taps. To put your deadlines into the "Paced" calendar, tap Sync now (iPhone asks "Open in Shortcuts?": tap Open and you come straight back). Want that automatic? Settings → Update Calendar automatically.
+35. If Shortcuts asks before removing events, turn on Settings app → Apps → Shortcuts → Advanced → Allow Deleting Without Confirmation.
+36. Tip: Settings app → Apps → Safari → Close Tabs → After One Day, so old Paced tabs don't pile up.
 
 ### If something doesn't work
 

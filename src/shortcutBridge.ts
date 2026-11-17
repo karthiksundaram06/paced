@@ -110,8 +110,8 @@ export function buildSyncEvents(plan: Plan, tasks: Task[], projects: Project[], 
  * so only error/cancel callbacks are given here.
  */
 /** events null: run without input, so the shortcut only reads your events and leaves the "Paced" calendar alone. */
-export function shortcutUrl(events: SyncEvent[] | null, returnBase?: string): string {
-  const input = events ? `&input=text&text=${encodeURIComponent(JSON.stringify({ events }))}` : '';
+export function shortcutUrl(events: SyncEvent[] | null, returnBase?: string, data?: string): string {
+  const input = events ? `&input=text&text=${encodeURIComponent(JSON.stringify(data ? { events, data } : { events }))}` : '';
   const base = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}${input}`;
   if (!returnBase) return base;
   return `${base}&x-error=${encodeURIComponent(`${returnBase}#sync=error`)}&x-cancel=${encodeURIComponent(`${returnBase}#sync=cancel`)}`;
@@ -163,6 +163,8 @@ export interface ParsedBusy {
   busy: BusyInterval[];
   skipped: number;
   duplicates: number;
+  /** "⚑ Due" events from the Paced calendar (only if the shortcut reads that calendar too). */
+  deadlines: { title: string; deadline: number; project: boolean }[];
 }
 
 /** Returns null when the text isn't from the Paced Sync shortcut at all. */
@@ -171,6 +173,7 @@ export function parseBusyText(text: string): ParsedBusy | null {
   const start = lines.findIndex((l) => l.trim() === BUSY_HEADER);
   if (start < 0) return null;
   const busy: BusyInterval[] = [];
+  const deadlines: ParsedBusy['deadlines'] = [];
   let skipped = 0;
   for (const raw of lines.slice(start + 1)) {
     const line = raw.trim();
@@ -183,10 +186,12 @@ export function parseBusyText(text: string): ParsedBusy | null {
       continue;
     }
     const title = rest.join('|').trim() || 'Busy';
-    if (/^(▶|⚑)\s/.test(title)) continue; // Paced's own events, in case the shortcut didn't filter them out
+    const due = /^⚑\s*(Project due|Due):\s*(.+)$/.exec(title);
+    if (due) deadlines.push({ title: due[2].trim(), deadline: b, project: due[1] === 'Project due' });
+    if (/^(▶|⚑)\s/.test(title)) continue; // Paced's own events never count as busy
     busy.push({ start: a, end: b, title });
   }
   busy.sort((x, y) => x.start - y.start);
   const unique = dedupeBusy(busy);
-  return { busy: unique, skipped, duplicates: busy.length - unique.length };
+  return { busy: unique, skipped, duplicates: busy.length - unique.length, deadlines };
 }

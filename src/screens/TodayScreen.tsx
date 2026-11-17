@@ -172,6 +172,35 @@ export function TodayScreen({
         </Card>
       )}
 
+      {s.restorable && s.restorable.length > 0 && (
+        <Card style={{ gap: 10, borderWidth: 1, borderColor: t.accent + '66' }}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Icon name="refresh-circle" color={t.accent} size={22} />
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '700', flex: 1 }}>Bring your tasks back?</Text>
+          </View>
+          <Muted style={{ fontSize: 13 }}>
+            Paced is empty, but your Paced calendar still has {s.restorable.length} deadline{s.restorable.length === 1 ? '' : 's'}. Restoring adds each one
+            back as a task with its deadline (time estimate set to 1 h; change it after).
+          </Muted>
+          {s.restorable.slice(0, 5).map((d, i) => (
+            <Text key={i} numberOfLines={1} style={{ color: t.text, fontSize: 14 }}>
+              {d.project ? '■ ' : '⚑ '}
+              {d.title}
+              <Text style={{ color: t.sub }}> · {when(d.deadline, now)}</Text>
+            </Text>
+          ))}
+          {s.restorable.length > 5 && <Muted style={{ fontSize: 13 }}>and {s.restorable.length - 5} more</Muted>}
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Restore" icon="refresh" onPress={s.restoreFromCalendar} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button title="Not now" kind="secondary" onPress={s.dismissRestore} />
+            </View>
+          </View>
+        </Card>
+      )}
+
       {overdue.length > 0 && (
         <Card style={{ gap: 10, borderWidth: 1, borderColor: t.danger + '55' }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
