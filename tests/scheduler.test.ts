@@ -302,4 +302,11 @@ test('Calendar gets only deadlines unless work blocks are switched on', () => {
   assert.ok(!all.some((e) => e.t.includes('snacs')));
 });
 
+test('a read-only sync sends no input, so the shortcut skips clearing the Paced calendar', () => {
+  const url = shortcutUrl(null, 'https://x.github.io/paced/');
+  assert.ok(!url.includes('input=') && !url.includes('&text='));
+  assert.ok(url.includes('x-cancel='));
+  assert.ok(shortcutUrl([], 'https://x.github.io/paced/').includes('&text='));
+});
+
 console.log(`${passed} tests passed (incl. bridge)`);

@@ -250,13 +250,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /** Web: hand the plan to the Paced Sync shortcut; it writes the calendar and opens Paced again with your events. */
   const startShortcutSync = useCallback((auto: boolean) => {
-    const { plan: p, tasks: ts, projects: ps, busy: b, settings: st } = ref.current;
+    const { plan: p, tasks: ts, projects: ps, busy: b, settings: st, sync: sy } = ref.current;
     const t = Date.now();
     const events = buildSyncEvents(p, ts, ps, t, st.calendarBlocks);
+    // A device that has never written and has nothing to write (a new iPad, say) only reads.
+    // Writing would clear the "Paced" calendar, which iCloud shares with your other devices.
+    const readOnly = events.length === 0 && !(sy.lastWritten && sy.lastWritten > 0);
     setSync((x) => ({
       ...x,
       lastSyncAt: t,
-      lastWritten: events.length,
+      lastWritten: readOnly ? x.lastWritten : events.length,
       pendingPaste: true,
       lastError: undefined,
       writtenBusyKey: busyKey(b),
@@ -264,7 +267,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
     // Give storage a moment to save before iOS switches to the Shortcuts app.
     setTimeout(() => {
-      window.location.href = shortcutUrl(events, `${window.location.origin}${window.location.pathname}`);
+      window.location.href = shortcutUrl(readOnly ? null : events, `${window.location.origin}${window.location.pathname}`);
     }, 400);
   }, []);
 
