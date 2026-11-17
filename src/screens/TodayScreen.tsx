@@ -247,7 +247,7 @@ export function TodayScreen({
           <Text style={{ color: t.accentText, fontSize: 20, fontWeight: '800' }} numberOfLines={2}>
             {activeTask.title}
           </Text>
-          <Text style={{ color: t.accentText, fontSize: 44, fontWeight: '800', fontVariant: ['tabular-nums'], opacity: isRunning ? 1 : 0.75 }}>
+          <Text style={{ color: t.accentText, fontSize: 44, fontWeight: '600', fontVariant: ['tabular-nums'], opacity: isRunning ? 1 : 0.75 }}>
             {isRunning ? stopwatch((now - timer!.startedAt) / 1000) : stopwatch(activeTask.loggedSec)}
           </Text>
           <Text style={{ color: t.accentText, opacity: 0.9 }}>
@@ -264,7 +264,7 @@ export function TodayScreen({
               <Text style={{ color: t.accentText, opacity: 0.8, fontWeight: '700', fontSize: 13 }}>
                 DEADLINE {when(plan.tasks[activeTask.id].deadline!, now).toUpperCase()}
               </Text>
-              <CountdownText to={plan.tasks[activeTask.id].deadline!} style={{ color: t.accentText, fontSize: 22, fontWeight: '800' }} />
+              <CountdownText to={plan.tasks[activeTask.id].deadline!} style={{ color: t.accentText, fontSize: 22, fontWeight: '600' }} />
             </View>
           )}
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -316,15 +316,15 @@ export function TodayScreen({
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Card style={{ flex: 1, padding: 14 }}>
             <Muted style={{ fontSize: 12 }}>Planned today</Muted>
-            <Text style={{ color: t.text, fontSize: 20, fontWeight: '800' }}>{duration(plannedToday)}</Text>
+            <Text style={{ color: t.text, fontSize: 20, fontWeight: '600' }}>{duration(plannedToday)}</Text>
           </Card>
           <Card style={{ flex: 1, padding: 14 }}>
             <Muted style={{ fontSize: 12 }}>Work left</Muted>
-            <Text style={{ color: t.text, fontSize: 20, fontWeight: '800' }}>{duration(remainingTotal)}</Text>
+            <Text style={{ color: t.text, fontSize: 20, fontWeight: '600' }}>{duration(remainingTotal)}</Text>
           </Card>
           <Card style={{ flex: 1, padding: 14 }}>
             <Muted style={{ fontSize: 12 }}>At risk</Muted>
-            <Text style={{ color: atRisk.length ? t.danger : t.ok, fontSize: 20, fontWeight: '800' }}>{atRisk.length}</Text>
+            <Text style={{ color: atRisk.length ? t.danger : t.ok, fontSize: 20, fontWeight: '600' }}>{atRisk.length}</Text>
           </Card>
         </View>
       )}
