@@ -73,7 +73,7 @@ The same steps are inside the app (Settings → Shortcut setup guide).
 ### Part 4: back up your tasks to iCloud Drive
 *So clearing Safari never loses your tasks, and your iPad gets them too. Do this once on your iPhone: the shortcut updates itself on your iPad.*
 
-27. Add "Get File" and drag it to the very top, above "If". Leave the folder as Shortcuts and type the path paced-backup.txt. Tap the arrow (Show More) and turn off "Error If Not Found".
+27. Add "Get File from Folder" and drag it to the very top, above "If". Set the folder to Shortcuts (iCloud Drive) and the path to paced-backup.txt. Tap the arrow (Show More) and turn off "Error If Not Found".
 28. Add "Get Dictionary Value" and drag it inside the If, just above "Otherwise". Set it to Get Value for key data in Dictionary (tap the last field and pick the Dictionary from "Get Dictionary from Input").
 29. Right under it, add "Save File" (it saves the Dictionary Value). Tap the arrow, turn off "Ask Where to Save", type the path paced-backup.txt, and turn on "Overwrite If File Exists".
 30. In Part 2's "Find Calendar Events", delete the filter "Calendar is not Paced" if it's there. Paced still ignores its own events, but this lets it rebuild your tasks from your deadlines if they are ever lost.
