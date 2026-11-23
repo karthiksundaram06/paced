@@ -1,5 +1,9 @@
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
+## Commits
+
+Every commit is authored and committed by Karthik Sundaram <kakarott2003@gmail.com>. Never commit as Claude, and never add "Co-Authored-By: Claude", "Claude-Session:" or other AI attribution lines to commit messages or pull requests.
+
 ## Expo has changed — do not trust your training data
 
 Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
