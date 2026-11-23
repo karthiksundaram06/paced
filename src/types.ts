@@ -34,6 +34,8 @@ export interface Settings {
   dayStartMin: number; // minutes after midnight when you're willing to start working
   dayEndMin: number; // minutes after midnight when you stop
   workDays: number[]; // 0 = Sunday … 6 = Saturday
+  /** Countdowns and timers tick in seconds; off shows minutes only. */
+  showSeconds: boolean;
   minChunkMin: number; // don't schedule blocks shorter than this
   /** Split each task's work evenly over the days before its deadline, instead of as early as possible. */
   spreadWork: boolean;
@@ -120,6 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dayStartMin: 9 * 60,
   dayEndMin: 22 * 60,
   workDays: [0, 1, 2, 3, 4, 5, 6],
+  showSeconds: true,
   minChunkMin: 25,
   spreadWork: true,
   maxChunkMin: 90,

@@ -248,7 +248,7 @@ export function TodayScreen({
             {activeTask.title}
           </Text>
           <Text style={{ color: t.accentText, fontSize: 44, fontWeight: '600', fontVariant: ['tabular-nums'], opacity: isRunning ? 1 : 0.75 }}>
-            {isRunning ? stopwatch((now - timer!.startedAt) / 1000) : stopwatch(activeTask.loggedSec)}
+            {isRunning ? stopwatch((now - timer!.startedAt) / 1000, s.settings.showSeconds !== false) : stopwatch(activeTask.loggedSec, s.settings.showSeconds !== false)}
           </Text>
           <Text style={{ color: t.accentText, opacity: 0.9 }}>
             {duration(loggedSecNow(activeTask, timer, now) / 60)} tracked of {duration(activeTask.estimateMin)} ·{' '}

@@ -647,7 +647,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => refreshBusy(), 50);
     }
     // Colour and sync preferences don't change the plan, so they don't need a calendar update.
-    const cosmetic = ['accent', 'autoWrite', 'font'];
+    const cosmetic = ['accent', 'autoWrite', 'font', 'showSeconds'];
     if (Object.keys(patch).some((k) => !cosmetic.includes(k))) bump();
   };
 

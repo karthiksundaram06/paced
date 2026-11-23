@@ -131,6 +131,14 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
         </View>
       </Card>
 
+      <Card>
+        {row(
+          'Show seconds',
+          'Countdowns and timers tick every second. Off: they show minutes only (2d 04h 12m).',
+          <Switch value={settings.showSeconds !== false} onValueChange={(v) => updateSettings({ showSeconds: v })} trackColor={{ true: t.accent }} />
+        )}
+      </Card>
+
       <SectionTitle>Calendar</SectionTitle>
       {IS_WEB ? (
         <>

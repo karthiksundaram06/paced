@@ -8,6 +8,20 @@ import type { Task, TaskPlan } from '../types';
 import { Icon, Progress, RoundButton, StatusPill } from '../ui';
 import { CountdownPill } from './Countdown';
 
+/**
+ * Task cards in the Tasks tab only speak up when something needs doing; the deadline itself is the
+ * countdown pill, and Today / the task editor still show the full "due · done · start by" line.
+ */
+export function taskIssue(task: Task, tp: TaskPlan | undefined, now: number): string {
+  if (!tp || task.done) return '';
+  if (tp.deadline !== undefined && tp.deadline <= now) return 'Deadline passed. Mark it done, or set a new deadline.';
+  if (tp.remainingMin === 0) return 'Estimate used up. Mark it done, or add time in the task.';
+  if (tp.unscheduledMin > 0) return `${duration(tp.unscheduledMin)} doesn't fit in your free time`;
+  if (tp.status === 'late' && tp.deadline !== undefined && tp.projectedFinish !== undefined)
+    return `Would finish ${duration((tp.projectedFinish - tp.deadline) / 60000)} after the deadline`;
+  return '';
+}
+
 /** One-line explanation of where a task stands: deadline, finish time, what to do. */
 export function deadlineLine(task: Task, tp: TaskPlan | undefined, now: number): { text: string; tone: 'normal' | 'warn' | 'danger' } {
   if (!tp) return { text: '', tone: 'normal' };
@@ -43,13 +57,13 @@ export function deadlineLine(task: Task, tp: TaskPlan | undefined, now: number):
 
 export function TaskRow({ task, onPress, showProject = false }: { task: Task; onPress: () => void; showProject?: boolean }) {
   const t = useTheme();
-  const { plan, timer, now, projects, startTimer, stopTimer, setDone } = useStore();
+  const { plan, timer, now, projects, startTimer, stopTimer, setDone, settings } = useStore();
   const tp = plan.tasks[task.id];
   const running = timer?.taskId === task.id;
   const logged = loggedSecNow(task, timer, now);
   const project = projects.find((p) => p.id === task.projectId);
-  const line = deadlineLine(task, tp, now);
-  const toneColor = line.tone === 'danger' ? t.danger : line.tone === 'warn' ? t.warn : t.sub;
+  const issue = taskIssue(task, tp, now);
+  const issueColor = tp?.remainingMin === 0 && !(tp.deadline !== undefined && tp.deadline <= now) ? t.warn : t.danger;
   const progress = task.estimateMin > 0 ? logged / 60 / task.estimateMin : 0;
   const over = logged / 60 > task.estimateMin;
 
@@ -85,7 +99,7 @@ export function TaskRow({ task, onPress, showProject = false }: { task: Task; on
           {!task.done && tp && <StatusPill status={tp.status} />}
           <Text style={{ color: over ? t.warn : t.sub, fontSize: 13, fontVariant: ['tabular-nums'] }}>
             {running
-              ? `${stopwatch(logged)} / ${duration(task.estimateMin)}`
+              ? `${stopwatch(logged, settings.showSeconds !== false)} / ${duration(task.estimateMin)}`
               : task.done
                 ? `${duration(logged / 60)} tracked`
                 : `${duration(tp?.remainingMin ?? task.estimateMin)} left of ${duration(task.estimateMin)}`}
@@ -98,7 +112,7 @@ export function TaskRow({ task, onPress, showProject = false }: { task: Task; on
           )}
         </View>
 
-        {!!line.text && <Text style={{ color: toneColor, fontSize: 13, lineHeight: 18 }}>{line.text}</Text>}
+        {!!issue && <Text style={{ color: issueColor, fontSize: 13, lineHeight: 18 }}>{issue}</Text>}
         {!task.done && tp?.blocks[0] && !running && (
           <Text style={{ color: t.faint, fontSize: 12 }}>
             {tp.blocks[0].start - now < 60_000

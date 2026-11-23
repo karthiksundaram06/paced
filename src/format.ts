@@ -62,11 +62,13 @@ export function longDate(ts: number): string {
 }
 
 /** Stopwatch: "4:05", "1:02:03" */
-export function stopwatch(sec: number): string {
+/** Elapsed time on a work timer: "1:05:09" / "5:09", or "1h 05m" / "5m" without seconds. */
+export function stopwatch(sec: number, seconds = true): string {
   const s = Math.max(0, Math.floor(sec));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
+  if (!seconds) return h ? `${h}h ${pad(m)}m` : `${m}m`;
   return h ? `${h}:${pad(m)}:${pad(r)}` : `${m}:${pad(r)}`;
 }
 
