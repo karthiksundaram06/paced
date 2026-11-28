@@ -101,6 +101,7 @@
           navigator.serviceWorker
             .register('./sw.js')
             .then(function (reg) {
+              if (!reg) return;
               var check = function () {
                 reg.update().catch(function () {});
               };
@@ -116,6 +117,6 @@
         });
       }
     </script>
-  <script src="/paced/_expo/static/js/web/index-6b5bc6815a08cd722a8cb0891f07000a.js" defer></script>
+  <script src="/paced/_expo/static/js/web/index-0b7144e7b7e595e106ae1104194546e0.js" defer></script>
 </body>
 </html>
