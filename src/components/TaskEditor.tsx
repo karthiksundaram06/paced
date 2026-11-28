@@ -15,11 +15,17 @@ export function TaskEditor({
   visible,
   task,
   defaultProjectId,
+  initialTitle,
+  deadlineFirst = false,
   onClose,
 }: {
   visible: boolean;
   task: Task | null;
   defaultProjectId?: string;
+  /** New task: start with this name (shared from another app). */
+  initialTitle?: string;
+  /** New task from the share sheet: the deadline picker comes right under the name. */
+  deadlineFirst?: boolean;
   onClose: () => void;
 }) {
   const t = useTheme();
@@ -35,13 +41,13 @@ export function TaskEditor({
 
   useEffect(() => {
     if (!visible) return;
-    setTitle(task?.title ?? '');
+    setTitle(task?.title ?? initialTitle ?? '');
     setProjectId(task ? task.projectId : defaultProjectId);
     setEstimateMin(task?.estimateMin ?? 60);
     setDeadline(task?.deadline);
     setPriority(task?.priority ?? 2);
     setNotes(task?.notes ?? '');
-  }, [visible, task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible, task?.id, initialTitle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Live preview: plan with this draft included.
   const preview = useMemo(() => {
@@ -100,10 +106,12 @@ export function TaskEditor({
         onChangeText={setTitle}
         placeholder="What needs doing?"
         placeholderTextColor={t.faint}
-        autoFocus={!task}
+        autoFocus={!task && !initialTitle}
         returnKeyType="done"
         style={{ backgroundColor: t.card, color: t.text, fontSize: 18, fontWeight: '600', padding: 14, borderRadius: 14 }}
       />
+
+      {deadlineFirst && <DeadlineField value={deadline} onChange={setDeadline} label="When is it due?" expanded />}
 
       {preview?.tp && (
         <View style={{ backgroundColor: t.accent + '14', borderRadius: 14, padding: 14, gap: 6 }}>
@@ -149,7 +157,7 @@ export function TaskEditor({
         </View>
       </View>
 
-      <DeadlineField value={deadline} onChange={setDeadline} />
+      {!deadlineFirst && <DeadlineField value={deadline} onChange={setDeadline} />}
 
       <View>
         <FieldLabel>Project</FieldLabel>

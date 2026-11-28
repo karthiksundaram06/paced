@@ -34,6 +34,8 @@ export interface Settings {
   dayStartMin: number; // minutes after midnight when you're willing to start working
   dayEndMin: number; // minutes after midnight when you stop
   workDays: number[]; // 0 = Sunday … 6 = Saturday
+  /** Once the iCloud Drive backup is set up: save changes by itself a little after you stop editing. */
+  autoSync: boolean;
   /** Countdowns and timers tick in seconds; off shows minutes only. */
   showSeconds: boolean;
   minChunkMin: number; // don't schedule blocks shorter than this
@@ -66,6 +68,7 @@ export interface SyncState {
   writtenBusyKey?: string; // web: calendar events the last written plan was based on
   backupAt?: number; // web: when the newest iCloud Drive backup seen so far was saved
   backupReadAt?: number; // web: when a backup last came back from the shortcut
+  backupSetup?: boolean; // web: the shortcut has the iCloud Drive backup steps (guide Part 4)
 }
 
 export interface BusyInterval {
@@ -122,6 +125,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dayStartMin: 9 * 60,
   dayEndMin: 22 * 60,
   workDays: [0, 1, 2, 3, 4, 5, 6],
+  autoSync: true,
   showSeconds: true,
   minChunkMin: 25,
   spreadWork: true,

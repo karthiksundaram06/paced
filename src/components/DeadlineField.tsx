@@ -9,7 +9,18 @@ import { DateTimeInput } from './DateTimeInput';
 const at = (dayStart: number, h: number) => dayStart + h * 3600_000;
 
 /** Toggle + quick picks + native date/time picker. */
-export function DeadlineField({ value, onChange, label = 'Deadline' }: { value?: number; onChange: (v?: number) => void; label?: string }) {
+export function DeadlineField({
+  value,
+  onChange,
+  label = 'Deadline',
+  expanded = false,
+}: {
+  value?: number;
+  onChange: (v?: number) => void;
+  label?: string;
+  /** Show the quick picks and the date/time picker even before a deadline is set. */
+  expanded?: boolean;
+}) {
   const t = useTheme();
   const now = Date.now();
   const today = startOfDay(now);
@@ -32,7 +43,7 @@ export function DeadlineField({ value, onChange, label = 'Deadline' }: { value?:
         <View>
           <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>{label}</Text>
           <Text style={{ color: t.sub, fontSize: 13, marginTop: 2 }}>
-            {value ? `${longDate(value)}, ${clock(value)}` : 'None: Paced will suggest one'}
+            {value ? `${longDate(value)}, ${clock(value)}` : expanded ? 'Pick one below' : 'None: Paced will suggest one'}
           </Text>
         </View>
         <Switch
@@ -41,7 +52,7 @@ export function DeadlineField({ value, onChange, label = 'Deadline' }: { value?:
           trackColor={{ true: t.accent }}
         />
       </View>
-      {value !== undefined && (
+      {(value !== undefined || expanded) && (
         <>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {quick.map((q) => (
@@ -50,7 +61,7 @@ export function DeadlineField({ value, onChange, label = 'Deadline' }: { value?:
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{ color: t.sub }}>Exact date & time</Text>
-            <DateTimeInput value={value} mode="datetime" onChange={onChange} />
+            <DateTimeInput value={value ?? at(addDays(today, 1), 17)} mode="datetime" onChange={onChange} />
           </View>
         </>
       )}

@@ -150,11 +150,17 @@ export function SettingsScreen({ onOpenGuide }: { onOpenGuide: () => void }) {
               <Switch value={settings.calendarBlocks} onValueChange={(v) => updateSettings({ calendarBlocks: v })} trackColor={{ true: t.accent }} />
             )}
             <Divider />
-            {row(
-              'Update Calendar automatically',
-              'On: a few seconds after you add, finish or delete a task, Paced updates your Calendar (Shortcuts opens for a moment). It never does this just because you opened Paced. Off: tap Sync now when you want it. Either way, your events refresh in the background whenever you open Paced from its icon.',
-              <Switch value={settings.autoWrite} onValueChange={(v) => updateSettings({ autoWrite: v })} trackColor={{ true: t.accent }} />
-            )}
+            {s.sync.backupSetup || s.sync.backupAt
+              ? row(
+                  'Sync automatically',
+                  'On: about 20 seconds after you stop changing tasks, Paced saves them to iCloud Drive and your Calendar by itself (Shortcuts flashes for a moment), and your other Apple devices pick them up when you open Paced there. Off: pull Today down when you want to save.',
+                  <Switch value={settings.autoSync !== false} onValueChange={(v) => updateSettings({ autoSync: v, autoWrite: false })} trackColor={{ true: t.accent }} />
+                )
+              : row(
+                  'Update Calendar automatically',
+                  'On: a few seconds after you add, finish or delete a task, Paced updates your Calendar (Shortcuts opens for a moment). It never does this just because you opened Paced. Off: tap Sync now when you want it. Either way, your events refresh in the background whenever you open Paced from its icon.',
+                  <Switch value={settings.autoWrite} onValueChange={(v) => updateSettings({ autoWrite: v })} trackColor={{ true: t.accent }} />
+                )}
           </Card>
           <Muted style={{ fontSize: 12, paddingHorizontal: 4 }}>
             Which calendars count as busy and how early you get alerts are set inside the "{SHORTCUT_NAME}" shortcut (Find Calendar Events

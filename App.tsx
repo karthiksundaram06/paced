@@ -28,14 +28,22 @@ function Main() {
   const insets = useSafeAreaInsets();
   const { loaded, plan, tasks, timer } = useStore();
   const [tab, setTab] = useState<Tab>('today');
-  const [taskEditor, setTaskEditor] = useState<{ task: Task | null; projectId?: string } | null>(null);
+  const [taskEditor, setTaskEditor] = useState<{ task: Task | null; projectId?: string; title?: string; deadlineFirst?: boolean } | null>(null);
   const [projectEditor, setProjectEditor] = useState<{ project: Project | null } | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const openGuide = () => setGuideOpen(true);
   // Never auto-sync (which leaves Safari for a moment) while an editor is open.
-  const { setUiBusy } = useStore();
+  const { setUiBusy, sharedAdd, clearSharedAdd } = useStore();
   const editorOpen = !!taskEditor || !!projectEditor || guideOpen;
   useEffect(() => setUiBusy(editorOpen), [editorOpen, setUiBusy]);
+  // Shared from another app (Share → Add to Paced): a new task, name filled in, deadline first.
+  useEffect(() => {
+    if (!sharedAdd) return;
+    setProjectEditor(null);
+    setGuideOpen(false);
+    setTaskEditor({ task: null, title: sharedAdd.title, deadlineFirst: true });
+    clearSharedAdd();
+  }, [sharedAdd, clearSharedAdd]);
 
   if (!loaded) {
     return (
@@ -106,6 +114,8 @@ function Main() {
         visible={!!taskEditor}
         task={editingTask}
         defaultProjectId={taskEditor?.projectId}
+        initialTitle={taskEditor?.title}
+        deadlineFirst={taskEditor?.deadlineFirst}
         onClose={() => setTaskEditor(null)}
       />
       <ShortcutGuide visible={guideOpen} onClose={() => setGuideOpen(false)} />

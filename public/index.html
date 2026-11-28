@@ -99,6 +99,7 @@
           navigator.serviceWorker
             .register('./sw.js')
             .then(function (reg) {
+              if (!reg) return;
               var check = function () {
                 reg.update().catch(function () {});
               };

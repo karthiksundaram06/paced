@@ -71,6 +71,19 @@ export const GUIDE: GuideSection[] = [
     ],
   },
   {
+    title: 'Part 5 (optional): add tasks from the share sheet',
+    note: 'Share a Brightspace page, an email or any web page to Paced: it opens a new task with the name filled in and the deadline ready to pick. Do this once on your iPhone; your iPad and Mac get it too.',
+    steps: [
+      'In Shortcuts, tap + to make a new shortcut and name it "Add to Paced".',
+      'Tap ⓘ at the bottom and turn on "Show in Share Sheet". Tap Done.',
+      'Add "Get Name". It should say Get name of Shortcut Input.',
+      'Add "URL Encode". It encodes the Name.',
+      `Add "URL" and type ${PACED_URL}#add= then, right after the =, insert the URL Encoded Text variable.`,
+      'Add "Open URLs". Done.',
+      'Try it: in Safari open any page, tap Share, then Add to Paced (scroll the row of apps or tap More if you don\'t see it).',
+    ],
+  },
+  {
     title: 'Try it',
     steps: [
       'Tap the new Paced icon. Allow calendar access the first time. Shortcuts flashes for a moment, then Paced opens in Safari with your events already in.',

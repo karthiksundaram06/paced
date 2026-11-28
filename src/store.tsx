@@ -1,4 +1,5 @@
 import { decodeSnapshot, encodeSnapshot, makeSnapshot, mergeSnapshot, stampChanges, tasksFromDeadlines, type CalendarDeadline } from './backup';
+import { cleanSharedTitle, parseAddHash } from './shareAdd';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -84,6 +85,9 @@ export interface Store {
   syncNow: () => Promise<void>;
   removeCalendar: () => Promise<void>;
   resetAll: () => Promise<void>;
+  /** A task shared from another app (Share → Add to Paced), waiting for the editor to open. */
+  sharedAdd: { title: string; at: number } | null;
+  clearSharedAdd: () => void;
   /** Paced is empty but the Paced calendar still has deadlines: offer to bring them back. */
   restorable: CalendarDeadline[] | null;
   restoreFromCalendar: () => void;
@@ -105,6 +109,17 @@ export function useStore(): Store {
 }
 
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/**
+ * When Paced hands the plan (and your tasks) to the shortcut by itself after edits.
+ * - "Update Calendar automatically" (autoWrite): soon after each change.
+ * - "Sync automatically" (autoSync, needs the iCloud Drive backup): batched, so a burst of edits is one save.
+ */
+function autoPace(s: Settings, sy: SyncState): { wait: number; gap: number } | null {
+  if (s.autoWrite) return { wait: 5_000, gap: 30_000 };
+  if (s.autoSync !== false && (sy.backupSetup || sy.backupAt)) return { wait: 20_000, gap: 120_000 };
+  return null;
+}
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
@@ -128,6 +143,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [now, setNow] = useState(Date.now());
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [tombstones, setTombstones] = useState<Record<string, number>>({});
+  const [sharedAdd, setSharedAdd] = useState<{ title: string; at: number } | null>(null);
   const [settingsAt, setSettingsAt] = useState<number | undefined>();
   const [restorable, setRestorable] = useState<CalendarDeadline[] | null>(null);
   // Local edits go through these, so each changed task/project carries the time of its last change.
@@ -396,6 +412,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBusy(kept);
     setBusyUpdatedAt(Date.now());
     setSettings((x) => ({ ...x, shortcutReady: true }));
+    // With the backup steps, the shortcut's reply starts with the backup file's line (empty until the first save).
+    if (backup.found || /^\r?\n/.test(text)) setSync((x) => (x.backupSetup ? x : { ...x, backupSetup: true }));
     setRestorable(backup.tasks === 0 && backup.projects === 0 && parsed.deadlines.length > 0 ? parsed.deadlines : null);
     setSync((x) => ({ ...x, pendingPaste: false, lastError: undefined }));
     setNow(Date.now());
@@ -442,6 +460,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const takeReturnRef = useRef<() => void>(() => {});
   takeReturnRef.current = () => {
     const { hash, search } = window.location;
+    const added = parseAddHash(hash);
+    if (added !== null) {
+      window.history.replaceState(null, '', window.location.pathname);
+      setSharedAdd({ title: cleanSharedTitle(added, ref.current.busy.map((b) => b.title ?? '')), at: Date.now() });
+      return;
+    }
     const ret = parseShortcutReturn(hash.length > 1 ? hash : search);
     if (!ret) return;
     window.history.replaceState(null, '', window.location.pathname);
@@ -466,9 +490,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // tasks since the last sync (never just because Paced was opened), and not twice within 30 s.
   const needsWrite = useCallback(() => {
     const { settings: s, sync: sy, dataChangedAt: changed } = ref.current;
-    if (!s.shortcutReady || !s.autoWrite) return false;
+    const pace = autoPace(s, sy);
+    if (!s.shortcutReady || !pace) return false;
     const sinceHandoff = sy.lastAutoAt ? Date.now() - sy.lastAutoAt : Infinity;
-    return (changed ?? 0) > (sy.lastSyncAt ?? 0) && sinceHandoff > 30_000;
+    return (changed ?? 0) > (sy.lastSyncAt ?? 0) && sinceHandoff > pace.gap;
   }, []);
 
   const autoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -477,7 +502,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(autoTimer.current);
       autoTimer.current = setTimeout(() => {
         if (document.visibilityState !== 'visible' || uiBusyRef.current || !needsWrite()) return;
-        setNotice({ ok: true, text: 'Updating your calendar…' });
+        setNotice({ ok: true, text: ref.current.sync.backupSetup ? 'Saving your changes…' : 'Updating your calendar…' });
         startShortcutSync(true);
       }, delay);
     },
@@ -487,12 +512,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // After you add or change tasks (and close the editor), update the calendar by itself.
   useEffect(() => {
     if (!loaded || !IS_WEB || uiBusy) return;
-    if ((dataChangedAt ?? 0) > (sync.lastSyncAt ?? 0)) {
-      // Wait 5 s after the last edit, and at least 30 s after the previous hand-off.
+    const pace = autoPace(settings, sync);
+    if (pace && (dataChangedAt ?? 0) > (sync.lastSyncAt ?? 0)) {
+      // Wait a little after the last edit (so a burst of edits goes in one save), and keep saves apart.
       const sinceHandoff = sync.lastAutoAt ? Date.now() - sync.lastAutoAt : Infinity;
-      scheduleAutoSync(Math.max(5000, 30_000 - sinceHandoff + 500));
+      scheduleAutoSync(Math.max(pace.wait, pace.gap - sinceHandoff + 500));
     }
-  }, [loaded, dataChangedAt, uiBusy, sync.lastSyncAt, sync.lastAutoAt, scheduleAutoSync]);
+  }, [loaded, dataChangedAt, uiBusy, sync.lastSyncAt, sync.lastAutoAt, sync.backupSetup, settings.autoSync, settings.autoWrite, scheduleAutoSync]);
 
   useEffect(() => {
     if (!loaded || !IS_WEB) return;
@@ -647,7 +673,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => refreshBusy(), 50);
     }
     // Colour and sync preferences don't change the plan, so they don't need a calendar update.
-    const cosmetic = ['accent', 'autoWrite', 'font', 'showSeconds'];
+    const cosmetic = ['accent', 'autoWrite', 'autoSync', 'font', 'showSeconds'];
     if (Object.keys(patch).some((k) => !cosmetic.includes(k))) bump();
   };
 
@@ -701,6 +727,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     syncNow,
     removeCalendar,
     resetAll,
+    sharedAdd,
+    clearSharedAdd: () => setSharedAdd(null),
     restorable,
     restoreFromCalendar,
     dismissRestore: () => setRestorable(null),
